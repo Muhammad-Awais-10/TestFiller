@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plover Filler</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="popup-shell">
+    <header>
+      <div class="brand-mark" aria-hidden="true">PF</div>
+      <div>
+        <p class="eyebrow">PLOVER</p>
+        <h1>Filler</h1>
+      </div>
+    </header>
+
+    <label for="department">Department</label>
+    <select id="department"></select>
+
+    <label for="mode">Generation style</label>
+    <select id="mode"></select>
+
+    <section class="email-card" aria-label="Generated email">
+      <span class="email-label">Current test email</span>
+      <output id="email" aria-live="polite">Generate an email to begin</output>
+    </section>
+
+    <button id="generate" class="primary">Generate new email</button>
+    <div class="action-grid">
+      <button id="generateFill">Generate + Fill</button>
+      <button id="copy" disabled>Copy</button>
+      <button id="fill">Fill new profile</button>
+    </div>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <footer>
+      <a href="history.html" target="_blank">History</a>
+      <a href="options.html" target="_blank">Settings</a>
+    </footer>
+  </main>
+  <script src="../shared/constants.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

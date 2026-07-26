@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plover Filler History</title>
+  <link rel="stylesheet" href="history.css">
+</head>
+<body>
+  <main>
+    <header><a href="popup.html">Plover Filler</a><h1>Email history</h1></header>
+    <div class="toolbar"><label class="sr-only" for="search">Search history</label><input id="search" type="search" placeholder="Search email, department, or website"><button id="export">Export CSV</button><button id="clear" class="danger">Clear all</button></div>
+    <p id="summary" role="status" aria-live="polite"></p>
+    <ol id="history"></ol>
+  </main>
+  <script src="../shared/constants.js"></script>
+  <script src="../shared/generator.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>
