@@ -27,7 +27,7 @@ async function generateEmail(pageUrl) {
     department,
     mode: settings.mode,
     domain: WebPlover.normalizeDomain(settings.domain),
-    website: WebPlover.websiteToken(pageUrl),
+    website: WebPlover.websiteToken(settings.website || pageUrl),
     createdAt: new Date().toISOString()
   };
   await chrome.storage.local.set({ [WebPlover.STORAGE_KEYS.counters]: counters });
@@ -54,6 +54,13 @@ async function sendToTab(tabId, message) {
   }
 }
 
+async function fillAndRecord(tab, record) {
+  if (!tab?.id) return null;
+  const result = await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile: record.profile });
+  if (result.ok) await WebPlover.setSubmissionUrl(record.id, tab.url || "");
+  return result;
+}
+
 async function generateForActiveTab({ fill = false, copy = false } = {}) {
   const tab = await currentTab();
   const result = await queuedGeneration(tab?.url || "");
@@ -61,7 +68,7 @@ async function generateForActiveTab({ fill = false, copy = false } = {}) {
   let copyResult = null;
   if (tab?.id) {
     [fillResult, copyResult] = await Promise.all([
-      fill ? sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile: result.record.profile }) : null,
+      fill ? fillAndRecord(tab, result.record) : null,
       copy ? sendToTab(tab.id, { type: "COPY_EMAIL", email: result.record.email }) : null
     ]);
   }
@@ -98,7 +105,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   try {
     const result = await queuedGeneration(tab.url || "");
     await Promise.all([
-      sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile: result.record.profile }),
+      fillAndRecord(tab, result.record),
       sendToTab(tab.id, { type: "COPY_EMAIL", email: result.record.email })
     ]);
   } catch (error) {
@@ -134,7 +141,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const tab = await currentTab();
         if (!tab?.id) return sendResponse({ ok: false, message: "No active tab is available to fill." });
         const profile = message.profile || WebPlover.contactProfile({ email: message.email, allocationId: message.email });
-        sendResponse(await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile }));
+        const result = await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile });
+        if (result.ok && message.id) await WebPlover.setSubmissionUrl(message.id, tab.url || "");
+        sendResponse(result);
         return;
       }
       case "DELETE_HISTORY":

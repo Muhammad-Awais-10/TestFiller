@@ -1,13 +1,13 @@
 const form = document.querySelector("#settingsForm");
 const status = document.querySelector("#status");
-const fields = Object.fromEntries(["defaultCountry", "domain", "department", "mode", "theme", "historyLimit", "autoCopy"].map((id) => [id, document.querySelector(`#${id}`)]));
+const fields = Object.fromEntries(["website", "aliasPrefix", "domain", "department", "mode", "defaultCountry", "theme", "historyLimit", "autoCopy"].map((id) => [id, document.querySelector(`#${id}`)]));
 
 function send(type, payload = {}) { return chrome.runtime.sendMessage({ type, ...payload }); }
 function setStatus(text, error = false) { status.textContent = text; status.className = error ? "error" : ""; }
 
 function downloadCsv(history) {
-  const header = ["Email", "Department", "Style", "Domain", "Website", "Generated at"];
-  const rows = history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.website, entry.createdAt]);
+  const header = ["Email", "Department", "Style", "Domain", "Submission URL", "Generated at"];
+  const rows = history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.submissionUrl || "", entry.createdAt]);
   const csv = [header, ...rows].map((row) => row.map(WebPlover.csvCell).join(",")).join("\r\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const link = document.createElement("a");

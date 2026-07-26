@@ -7,6 +7,7 @@ try {
   check("falls back from invalid domain", WebPlover.normalizeDomain("bad value") === "webplover.com");
   check("keeps sequential department prefix", WebPlover.buildEmail({ department: "qa", mode: "sequential", counter: 1, domain: "webplover.com" }) === "qa-000001@webplover.com");
   check("separates department sequences", WebPlover.buildEmail({ department: "dev", mode: "sequential", counter: 1, domain: "webplover.com" }) === "dev-000001@webplover.com");
+  check("uses a custom alias prefix", WebPlover.buildEmail({ aliasPrefix: "sales", department: "qa", mode: "sequential", counter: 1, domain: "webplover.com" }) === "sales-000001@webplover.com");
   check("creates a date-mode local part", /^qa-\d{8}-001@webplover\.com$/.test(WebPlover.buildEmail({ department: "qa", mode: "date", counter: 1, domain: "webplover.com" })));
   check("creates a website-mode local part", WebPlover.buildEmail({ department: "qa", mode: "website", counter: 12, domain: "webplover.com", pageUrl: "https://www.example.com/contact" }) === "example-qa-012@webplover.com");
   const randomA = WebPlover.randomToken(); const randomB = WebPlover.randomToken();

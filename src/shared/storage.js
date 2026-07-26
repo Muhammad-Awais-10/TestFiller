@@ -14,8 +14,10 @@ WebPlover.saveSettings = async function (settings) {
   const normalized = {
     ...WebPlover.DEFAULT_SETTINGS,
     ...settings,
+    website: WebPlover.normalizeWebsite(settings.website),
     domain: WebPlover.normalizeDomain(settings.domain),
     department: WebPlover.DEPARTMENTS[settings.department] ? settings.department : WebPlover.DEFAULT_SETTINGS.department,
+    aliasPrefix: WebPlover.normalizeAliasPrefix(settings.aliasPrefix),
     mode: WebPlover.MODES[settings.mode] ? settings.mode : WebPlover.DEFAULT_SETTINGS.mode,
     defaultCountry: WebPlover.normalizeCountry(settings.defaultCountry),
     historyLimit: Math.max(1, Math.min(WebPlover.MAX_HISTORY, Number(settings.historyLimit) || WebPlover.MAX_HISTORY))
@@ -28,6 +30,13 @@ WebPlover.recordHistory = async function (record, history, limit) {
   const nextHistory = [record, ...history].slice(0, limit);
   await chrome.storage.local.set({ [WebPlover.STORAGE_KEYS.history]: nextHistory });
   return nextHistory;
+};
+
+WebPlover.setSubmissionUrl = async function (id, submissionUrl) {
+  const key = WebPlover.STORAGE_KEYS.history;
+  const stored = await chrome.storage.local.get(key);
+  const history = Array.isArray(stored[key]) ? stored[key] : [];
+  await chrome.storage.local.set({ [key]: history.map((entry) => entry.id === id ? { ...entry, submissionUrl } : entry) });
 };
 
 WebPlover.clearHistory = function () {

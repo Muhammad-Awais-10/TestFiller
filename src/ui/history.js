@@ -22,8 +22,9 @@ function render() {
     const item = document.createElement("li"); item.className = "entry";
     const copy = document.createElement("div"); copy.className = "entry-copy";
     const email = document.createElement("p"); email.className = "email"; email.textContent = entry.email;
-    const meta = document.createElement("p"); meta.className = "metadata"; meta.textContent = `${entry.department} · ${entry.mode} · ${entry.website || "No website"} · ${formatDate(entry.createdAt)}`;
-    copy.append(email, meta);
+    const meta = document.createElement("p"); meta.className = "metadata"; meta.textContent = `${entry.department} · ${entry.mode} · ${formatDate(entry.createdAt)}`;
+    const website = document.createElement("a"); website.className = "website"; website.href = entry.submissionUrl || "#"; website.textContent = entry.submissionUrl || "Not filled"; if (entry.submissionUrl) { website.target = "_blank"; website.rel = "noopener noreferrer"; } else website.removeAttribute("href");
+    copy.append(email, meta, website);
     const copyButton = document.createElement("button"); copyButton.textContent = "Copy"; copyButton.addEventListener("click", async () => { await navigator.clipboard.writeText(entry.email); summary.textContent = `Copied ${entry.email}`; });
     const deleteButton = document.createElement("button"); deleteButton.textContent = "Delete"; deleteButton.className = "danger"; deleteButton.addEventListener("click", async () => { await send("DELETE_HISTORY", { id: entry.id }); history = history.filter((itemEntry) => itemEntry.id !== entry.id); render(); });
     item.append(copy, copyButton, deleteButton); list.append(item);
@@ -31,7 +32,7 @@ function render() {
 }
 
 function exportCsv() {
-  const rows = [["Email", "Department", "Style", "Domain", "Website", "Generated at"], ...history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.website, entry.createdAt])];
+  const rows = [["Email", "Department", "Style", "Domain", "Submission URL", "Generated at"], ...history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.submissionUrl || "", entry.createdAt])];
   const url = URL.createObjectURL(new Blob([rows.map((row) => row.map(WebPlover.csvCell).join(",")).join("\r\n")], { type: "text/csv" }));
   const link = document.createElement("a"); link.href = url; link.download = "webplover-test-email-history.csv"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
 }

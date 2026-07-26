@@ -22,7 +22,9 @@ WebPlover.MODES = {
 };
 
 WebPlover.DEFAULT_SETTINGS = {
+  website: "",
   domain: "webplover.com",
+  aliasPrefix: "",
   department: "qa",
   mode: "sequential",
   autoCopy: true,

@@ -12,14 +12,20 @@ WebPlover.normalizeCountry = function (value) {
   return /^[A-Z]{2}$/.test(country) ? country : WebPlover.DEFAULT_SETTINGS.defaultCountry;
 };
 
-WebPlover.websiteToken = function (url) {
-  try {
-    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    const label = host.split(".")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    return label.slice(0, 24);
-  } catch {
-    return "";
-  }
+WebPlover.normalizeAliasPrefix = function (value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+};
+
+WebPlover.normalizeWebsite = function (value) {
+  const website = String(value || "").trim();
+  if (!website) return "";
+  try { return new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`).hostname.toLowerCase().replace(/^www\./, ""); }
+  catch { return ""; }
+};
+
+WebPlover.websiteToken = function (value) {
+  const host = WebPlover.normalizeWebsite(value);
+  return host.split(".")[0].replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24);
 };
 
 WebPlover.randomToken = function (length = 6) {
@@ -36,10 +42,10 @@ WebPlover.dateToken = function (date = new Date()) {
   return `${year}${month}${day}`;
 };
 
-WebPlover.buildEmail = function ({ department, mode, counter, domain, pageUrl }) {
-  const prefix = WebPlover.DEPARTMENTS[department] ? department : "other";
+WebPlover.buildEmail = function ({ aliasPrefix, department, mode, counter, domain, pageUrl, website }) {
+  const prefix = WebPlover.normalizeAliasPrefix(aliasPrefix) || (WebPlover.DEPARTMENTS[department] ? department : "other");
   const sequence = String(counter).padStart(6, "0");
-  const website = WebPlover.websiteToken(pageUrl);
+  const websiteToken = WebPlover.websiteToken(website || pageUrl);
   const random = WebPlover.randomToken();
   let localPart;
 
@@ -51,10 +57,10 @@ WebPlover.buildEmail = function ({ department, mode, counter, domain, pageUrl })
       localPart = `${prefix}-${WebPlover.dateToken()}-${sequence.slice(-3)}`;
       break;
     case "website":
-      localPart = website ? `${website}-${prefix}-${sequence.slice(-3)}` : `${prefix}-${sequence}`;
+      localPart = websiteToken ? `${websiteToken}-${prefix}-${sequence.slice(-3)}` : `${prefix}-${sequence}`;
       break;
     case "mixed":
-      localPart = website ? `${website}-${prefix}-${WebPlover.dateToken()}-${random}` : `${prefix}-${WebPlover.dateToken()}-${random}`;
+      localPart = websiteToken ? `${websiteToken}-${prefix}-${WebPlover.dateToken()}-${random}` : `${prefix}-${WebPlover.dateToken()}-${random}`;
       break;
     default:
       localPart = `${prefix}-${sequence}`;

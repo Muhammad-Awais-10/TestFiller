@@ -11,7 +11,10 @@ const assert = (condition, label) => { if (!condition) throw new Error(label); }
 assert(!manifest.action.default_popup, "toolbar click does not open a popup");
 assert(WebPlover.buildEmail({ department: "qa", mode: "sequential", counter: 1, domain: "webplover.com" }) === "qa-000001@webplover.com", "sequential email");
 assert(WebPlover.buildEmail({ department: "dev", mode: "sequential", counter: 12, domain: "webplover.com" }) === "dev-000012@webplover.com", "department email");
+assert(WebPlover.buildEmail({ aliasPrefix: "sales", department: "qa", mode: "sequential", counter: 12, domain: "webplover.com" }) === "sales-000012@webplover.com", "custom alias prefix");
 assert(WebPlover.buildEmail({ department: "qa", mode: "website", counter: 12, domain: "webplover.com", pageUrl: "https://www.example.com/contact" }) === "example-qa-012@webplover.com", "website email");
+assert(WebPlover.buildEmail({ department: "qa", mode: "website", counter: 12, domain: "webplover.com", website: "client.example" }) === "client-qa-012@webplover.com", "configured website email");
+assert(WebPlover.normalizeWebsite("example.com") === "example.com", "website normalization");
 assert(WebPlover.normalizeCountry("ca") === "CA", "country normalization");
 const profileA = WebPlover.contactProfile({ email: "qa-000001@webplover.com", allocationId: "allocation-1", country: "US" });
 const profileB = WebPlover.contactProfile({ email: "qa-000001@webplover.com", allocationId: "allocation-1", country: "US" });

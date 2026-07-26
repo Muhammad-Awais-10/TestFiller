@@ -10,11 +10,25 @@
   <main>
     <header><a href="popup.html">Plover Filler</a><h1>Settings</h1></header>
     <form id="settingsForm">
+      <fieldset>
+        <legend>Website</legend>
+        <label>Website for testing <input id="website" type="url" inputmode="url" placeholder="example.com" aria-describedby="websiteHelp"></label>
+        <p id="websiteHelp">Used by Website Name and Mixed styles. Leave blank to use the active tab.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Email generation</legend>
+        <div class="field-grid">
+          <label>Alias prefix <input id="aliasPrefix" type="text" maxlength="63" placeholder="Uses department" aria-describedby="aliasHelp"></label>
+          <label>Domain <input id="domain" type="text" inputmode="url" required aria-describedby="domainHelp"></label>
+        </div>
+        <p id="aliasHelp">The text before the number. Leave blank to use the default department.</p>
+        <p id="domainHelp">The part after @. Defaults to webplover.com if invalid.</p>
+        <div class="field-grid">
+          <label>Default department <select id="department"></select></label>
+          <label>Generation style <select id="mode"></select></label>
+        </div>
+      </fieldset>
       <label>Default country <input id="defaultCountry" type="text" minlength="2" maxlength="2" autocapitalize="characters" placeholder="US"></label>
-      <label>Test email domain <input id="domain" type="text" inputmode="url" required aria-describedby="domainHelp"></label>
-      <p id="domainHelp">Only the part after @. Defaults to webplover.com if invalid.</p>
-      <label>Default department <select id="department"></select></label>
-      <label>Generation style <select id="mode"></select></label>
       <label>Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       <label>History entries (1–500) <input id="historyLimit" type="number" min="1" max="500"></label>
       <label class="check"><input id="autoCopy" type="checkbox"> Automatically copy each generated email</label>
