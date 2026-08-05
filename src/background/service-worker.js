@@ -3,7 +3,6 @@ importScripts("../shared/constants.js", "../shared/generator.js", "../shared/sto
 let generationQueue = Promise.resolve();
 const MENU_GENERATE_FILL = "plover-filler-generate-fill";
 const MENU_SETTINGS = "plover-filler-settings";
-const MENU_HISTORY = "plover-filler-history";
 
 async function generateEmail(pageUrl) {
   const { settings, counters, history } = await WebPlover.getState();
@@ -19,7 +18,7 @@ async function generateEmail(pageUrl) {
   if (used.has(email)) throw new Error("Could not allocate a unique local test email. Reset counters only after clearing history.");
 
   counters[department] = counter;
-  const profile = WebPlover.contactProfile({ email, allocationId: `${department}-${counter}`, country: settings.defaultCountry });
+  const profile = WebPlover.contactProfile({ email, allocationId: `${department}-${counter}`, country: settings.defaultCountry, namePrefix: settings.namePrefix, nameSuffix: settings.nameSuffix, otherPrefix: settings.otherPrefix, otherSuffix: settings.otherSuffix, company: settings.company });
   const record = {
     id: crypto.randomUUID(),
     email,
@@ -27,7 +26,7 @@ async function generateEmail(pageUrl) {
     department,
     mode: settings.mode,
     domain: WebPlover.normalizeDomain(settings.domain),
-    website: WebPlover.websiteToken(settings.website || pageUrl),
+    website: WebPlover.websiteToken(pageUrl),
     createdAt: new Date().toISOString()
   };
   await chrome.storage.local.set({ [WebPlover.STORAGE_KEYS.counters]: counters });
@@ -79,7 +78,6 @@ function createContextMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({ id: MENU_GENERATE_FILL, title: "Generate and fill Plover Filler profile", contexts: ["editable"] });
     chrome.contextMenus.create({ id: MENU_SETTINGS, title: "Settings", contexts: ["action"] });
-    chrome.contextMenus.create({ id: MENU_HISTORY, title: "History", contexts: ["action"] });
   });
 }
 
@@ -100,7 +98,6 @@ chrome.action.onClicked.addListener(async () => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === MENU_SETTINGS) return chrome.runtime.openOptionsPage();
-  if (info.menuItemId === MENU_HISTORY) return chrome.tabs.create({ url: chrome.runtime.getURL("src/ui/history.html") });
   if (info.menuItemId !== MENU_GENERATE_FILL || !tab?.id) return;
   try {
     const result = await queuedGeneration(tab.url || "");
@@ -140,7 +137,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case "FILL_ACTIVE_TAB": {
         const tab = await currentTab();
         if (!tab?.id) return sendResponse({ ok: false, message: "No active tab is available to fill." });
-        const profile = message.profile || WebPlover.contactProfile({ email: message.email, allocationId: message.email });
+        const { settings } = await WebPlover.getState();
+        const profile = message.profile || WebPlover.contactProfile({ email: message.email, allocationId: message.email, company: settings.company });
         const result = await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile });
         if (result.ok && message.id) await WebPlover.setSubmissionUrl(message.id, tab.url || "");
         sendResponse(result);

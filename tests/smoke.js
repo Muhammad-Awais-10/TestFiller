@@ -4,7 +4,7 @@ function check(name, condition) { if (!condition) throw new Error(`Failed: ${nam
 
 try {
   check("normalizes valid domain", WebPlover.normalizeDomain("@Agency.com") === "agency.com");
-  check("falls back from invalid domain", WebPlover.normalizeDomain("bad value") === "webplover.com");
+  check("falls back from invalid domain", WebPlover.normalizeDomain("bad value") === "example.com");
   check("keeps sequential department prefix", WebPlover.buildEmail({ department: "qa", mode: "sequential", counter: 1, domain: "webplover.com" }) === "qa-000001@webplover.com");
   check("separates department sequences", WebPlover.buildEmail({ department: "dev", mode: "sequential", counter: 1, domain: "webplover.com" }) === "dev-000001@webplover.com");
   check("uses a custom alias prefix", WebPlover.buildEmail({ aliasPrefix: "sales", department: "qa", mode: "sequential", counter: 1, domain: "webplover.com" }) === "sales-000001@webplover.com");

@@ -14,7 +14,11 @@ WebPlover.saveSettings = async function (settings) {
   const normalized = {
     ...WebPlover.DEFAULT_SETTINGS,
     ...settings,
-    website: WebPlover.normalizeWebsite(settings.website),
+    namePrefix: String(settings.namePrefix || "").trim().slice(0, 30),
+    nameSuffix: String(settings.nameSuffix || "").trim().slice(0, 30),
+    otherPrefix: String(settings.otherPrefix || "").trim().slice(0, 100),
+    otherSuffix: String(settings.otherSuffix || "").trim().slice(0, 100),
+    company: String(settings.company || WebPlover.DEFAULT_SETTINGS.company).trim().slice(0, 100) || WebPlover.DEFAULT_SETTINGS.company,
     domain: WebPlover.normalizeDomain(settings.domain),
     department: WebPlover.DEPARTMENTS[settings.department] ? settings.department : WebPlover.DEFAULT_SETTINGS.department,
     aliasPrefix: WebPlover.normalizeAliasPrefix(settings.aliasPrefix),
