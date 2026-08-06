@@ -1,4 +1,6 @@
 (() => {
+  if (globalThis.WebPloverContentScriptInstalled) return;
+  globalThis.WebPloverContentScriptInstalled = true;
   const PROTECTED_HINT = /\b(password|passcode|login|log[ -]?in|sign[ -]?in|username|user[ -]?name|otp|one[ -]?time|verification|verify|captcha|card|credit|debit|cvv|cvc|iban|bank|routing|account number|tax|ssn|social security|passport|driver.?s? licen[cs]e|national id)\b/i;
   const PHONE_HINT = /\b(phone|telephone|mobile|cell|whats?app|fax|tel|contact[ _-]?(number|no|#)?|mobile[ _-]?(number|no|#)?|phone[ _-]?(number|no|#)?)\b/i;
   const COUNTRY_ALIASES = { US: ["us", "united states", "united states of america"], CA: ["ca", "canada"], GB: ["gb", "uk", "united kingdom", "great britain"], AU: ["au", "australia"] };

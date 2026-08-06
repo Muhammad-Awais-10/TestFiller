@@ -3,6 +3,35 @@ importScripts("../shared/constants.js", "../shared/generator.js", "../shared/sto
 let generationQueue = Promise.resolve();
 const MENU_GENERATE_FILL = "plover-filler-generate-fill";
 const MENU_SETTINGS = "plover-filler-settings";
+const CONTENT_SCRIPT = "src/content/content-script.js";
+
+function canInjectIntoTab(tab) {
+  if (!tab?.url) return false;
+  try {
+    const url = new URL(tab.url);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function isMissingReceiverError(error) {
+  return /Receiving end does not exist|Could not establish connection|No receiving end/i.test(error?.message || "");
+}
+
+async function injectContentScript(tabId) {
+  await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: [CONTENT_SCRIPT] });
+}
+
+async function sendToTab(tab, message) {
+  try {
+    return await chrome.tabs.sendMessage(tab.id, message);
+  } catch (error) {
+    if (!isMissingReceiverError(error) || !canInjectIntoTab(tab)) throw error;
+    await injectContentScript(tab.id);
+    return await chrome.tabs.sendMessage(tab.id, message);
+  }
+}
 
 async function generateEmail(pageUrl) {
   const { settings, counters, history } = await WebPlover.getState();
@@ -45,17 +74,9 @@ async function currentTab() {
   return tab;
 }
 
-async function sendToTab(tabId, message) {
-  try {
-    return await chrome.tabs.sendMessage(tabId, message);
-  } catch {
-    return { ok: false, message: "This page cannot be filled. Copy the email and paste it manually." };
-  }
-}
-
 async function fillAndRecord(tab, record) {
   if (!tab?.id) return null;
-  const result = await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile: record.profile });
+  const result = await sendToTab(tab, { type: "FILL_CONTACT_PROFILE", profile: record.profile });
   if (result.ok) await WebPlover.setSubmissionUrl(record.id, tab.url || "");
   return result;
 }
@@ -68,7 +89,7 @@ async function generateForActiveTab({ fill = false, copy = false } = {}) {
   if (tab?.id) {
     [fillResult, copyResult] = await Promise.all([
       fill ? fillAndRecord(tab, result.record) : null,
-      copy ? sendToTab(tab.id, { type: "COPY_EMAIL", email: result.record.email }) : null
+      copy ? sendToTab(tab, { type: "COPY_EMAIL", email: result.record.email }) : null
     ]);
   }
   return { ...result, fillResult, copyResult };
@@ -103,7 +124,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const result = await queuedGeneration(tab.url || "");
     await Promise.all([
       fillAndRecord(tab, result.record),
-      sendToTab(tab.id, { type: "COPY_EMAIL", email: result.record.email })
+      sendToTab(tab, { type: "COPY_EMAIL", email: result.record.email })
     ]);
   } catch (error) {
     console.error("Plover Filler context menu action failed", error);
@@ -139,7 +160,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!tab?.id) return sendResponse({ ok: false, message: "No active tab is available to fill." });
         const { settings } = await WebPlover.getState();
         const profile = message.profile || WebPlover.contactProfile({ email: message.email, allocationId: message.email, company: settings.company });
-        const result = await sendToTab(tab.id, { type: "FILL_CONTACT_PROFILE", profile });
+        const result = await sendToTab(tab, { type: "FILL_CONTACT_PROFILE", profile });
         if (result.ok && message.id) await WebPlover.setSubmissionUrl(message.id, tab.url || "");
         sendResponse(result);
         return;
