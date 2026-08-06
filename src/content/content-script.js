@@ -87,7 +87,7 @@
   }
 
   function clickableTarget(element) {
-    if (element instanceof HTMLElement && typeof element.click === "function") return element;
+    if (element && typeof element.click === "function") return element;
     return null;
   }
 
@@ -106,6 +106,14 @@
     target.click();
     dispatchChange(target);
     return true;
+  }
+
+  function isCustomSelectButton(element) {
+    if (!element || (element.getAttribute && element.getAttribute("role")) !== "button") return false;
+    const hasPopup = /^(listbox|menu)$/i.test(element.getAttribute("aria-haspopup") || "");
+    const expanded = element.getAttribute("aria-expanded");
+    const controls = element.getAttribute("aria-controls") || element.getAttribute("aria-owns");
+    return hasPopup || (expanded !== null && controls);
   }
 
   function fillCustomSelectLike(element) {
@@ -142,7 +150,7 @@
     const seen = new Set();
     const radios = candidates.filter((element) => (element.getAttribute && element.getAttribute("role")) === "radio" && !isHiddenLike(element) && !forbiddenAction(element) && canFill(element));
     const checks = candidates.filter((element) => (element.getAttribute && element.getAttribute("role")) === "checkbox" && !isHiddenLike(element) && !forbiddenAction(element) && canFill(element));
-    const selects = candidates.filter((element) => ((element.getAttribute && element.getAttribute("role")) === "listbox" || (element.getAttribute && element.getAttribute("role")) === "button") && !isHiddenLike(element) && !forbiddenAction(element) && canFill(element));
+    const selects = candidates.filter((element) => ((element.getAttribute && element.getAttribute("role")) === "listbox" || isCustomSelectButton(element)) && !isHiddenLike(element) && !forbiddenAction(element) && canFill(element));
 
     for (const element of radios) {
       const key = `radio:${groupKey(element)}`;

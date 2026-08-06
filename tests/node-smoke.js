@@ -62,6 +62,16 @@ const fillContext = {
   document: { activeElement: null, querySelectorAll: (selector) => selector === "input, textarea, select, [contenteditable=\"true\"]" ? fields : [] },
   chrome: { runtime: { onMessage: { addListener: (listener) => { fillListener = listener; } } } }
 };
+class FakeButton {
+  constructor(label, attrs = {}) { this.clicked = false; this.disabled = false; this.readOnly = false; this._attrs = attrs; this.textContent = label; this.ownerDocument = null; this.style = { zIndex: 0 }; }
+  getAttribute(name) { return this._attrs[name] ?? null; }
+  getBoundingClientRect() { return { width: 1, height: 1 }; }
+  querySelectorAll() { return []; }
+  click() { this.clicked = true; }
+}
+class FakeListbox extends FakeButton {
+  querySelectorAll(selector) { return selector.includes("[role=option]") ? this.options : []; }
+}
 vm.createContext(fillContext);
 vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), fillContext);
 const fill = (profile) => { let result; fillListener({ type: "FILL_CONTACT_PROFILE", profile }, null, (response) => { result = response; }); return result; };
@@ -73,4 +83,32 @@ assert(firstNameField.value && lastNameField.value && mobileField.value.startsWi
 emailField.value = "person@example.com";
 fill({ email: "third@example.com", otherText: "Third lorem" });
 assert(emailField.value === "person@example.com" && loremField.value === "Third lorem", "preserves user-edited fields");
+
+const normalButton = new FakeButton("Contact form owner", { role: "button" });
+const dropdownOption = new FakeButton("Choose one", { role: "option" });
+const dropdown = new FakeListbox("Select an option", { role: "button", "aria-haspopup": "listbox", "aria-controls": "dropdown-1" });
+const dropdownMenu = new FakeListbox("", { role: "listbox" });
+dropdown.ownerDocument = { getElementById: (id) => id === "dropdown-1" ? dropdownMenu : null };
+dropdownMenu.options = [dropdownOption];
+dropdownMenu.querySelectorAll = (selector) => selector.includes("[role=option]") ? dropdownMenu.options : [];
+dropdown.querySelectorAll = (selector) => selector.includes("[role=option]") ? dropdownMenu.options : [];
+let buttonClicked = false;
+normalButton.click = () => { buttonClicked = true; };
+const customCandidates = [normalButton, dropdown];
+const popupRoot = { style: { zIndex: 1 }, getBoundingClientRect: () => ({ width: 1, height: 1 }), querySelectorAll: (selector) => selector === "*" ? customCandidates : [] };
+const customContext = {
+  HTMLInputElement: FakeInput,
+  HTMLTextAreaElement: FakeTextArea,
+  HTMLSelectElement: class FakeSelect extends FakeInput {},
+  Event: class Event { constructor(type) { this.type = type; } },
+  getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+  HTMLElement: FakeButton,
+  document: { activeElement: null, querySelectorAll: (selector) => selector === "input, textarea, select, [contenteditable=\"true\"]" ? [] : (selector.includes("[role=dialog]") ? [popupRoot] : customCandidates) },
+  chrome: { runtime: { onMessage: { addListener: (listener) => { customContext.listener = listener; } } } }
+};
+vm.createContext(customContext);
+vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), customContext);
+customContext.listener({ type: "FILL_CONTACT_PROFILE", profile: { otherText: "x" } }, null, () => {});
+assert(!buttonClicked, "does not click normal role=button controls");
+assert(dropdown.clicked && dropdownOption.clicked, "opens and selects a real ARIA dropdown");
 console.log("Generator and refill smoke checks passed.");
