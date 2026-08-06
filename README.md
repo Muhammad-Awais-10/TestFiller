@@ -1,55 +1,105 @@
 # Plover Filler
 
-A fully offline Manifest V3 Chrome extension for internal form testing. Clicking the toolbar icon creates a local test email and fictional profile, then fills safe empty contact fields on the active page without opening the extension. It makes no API calls and needs no account, token, or server setup.
+Plover Filler is a local-only Manifest V3 Chrome extension that generates clearly fake test emails and contact profiles, then fills safe empty form fields on the active page.
 
-## What it fills
+It does not use an API, server, account, or token.
 
-Plover Filler creates a fictional profile with:
+## What it does
 
-- First name, last name, or full name
-- Email and phone
+- Generates unique test emails per department
+- Fills common contact fields on the active tab
+- Supports popup, keyboard shortcuts, and editable-field context menu filling
+- Keeps email history and settings in local Chrome storage
+- Lets you export history as CSV
+
+## Generated data
+
+A generated profile can include:
+
+- First name, last name, full name
+- Email
+- Phone
 - Company
-- Address lines, city, state/region, postal code, and country
+- Address line 1 and 2
+- City, state/region, postal code, country
+- Website
+- Job title
+- Generic filler text for safe freeform fields
 
-It deliberately does **not** fill passwords, usernames/login fields, OTP/verification/captcha fields, payment/bank/government-ID fields, hidden/file controls, checkboxes/radios, disabled/readonly fields, generic notes/messages, or ambiguous fields. Existing user-entered values are never overwritten.
+## What it does not fill
 
-## Local uniqueness
+It avoids passwords, usernames, OTP and verification fields, captchas, payment or bank fields, government ID fields, hidden/file inputs, disabled or readonly fields, and ambiguous or protected fields. Existing user input is not overwritten.
 
-Each Chrome profile maintains separate department counters in local extension storage. Plover Filler serializes generation requests, so addresses remain unique per department in that profile while its storage is retained.
+## How email generation works
 
-Because this extension is offline, it **cannot** guarantee uniqueness across different teammates, computers, browser profiles, or after clearing/resetting extension storage. Use a shared server-side allocator only if that cross-team guarantee becomes necessary.
+Emails are built from the selected department and mode:
+
+- `Sequential` — `qa-000001@example.com`
+- `Random` — `qa-abc123@example.com`
+- `Date` — `qa-20260806-001@example.com`
+- `Website Name` — `example-qa-001@example.com`
+- `Mixed` — combines website, date, and random token when available
+
+The domain, alias prefix, department, mode, and country are configurable in Settings.
 
 ## Install
 
 1. Open `chrome://extensions`.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select this project folder (the one containing [manifest.json](manifest.json)).
-5. Pin **Plover Filler**.
+4. Select this project folder.
+5. Pin **Plover Filler** if desired.
 
-No API, WordPress plugin, URL, or token is required.
+## Usage
 
-## Daily workflow
+### Toolbar popup
 
-- Click the toolbar icon to generate a local test email and fill safe empty contact fields.
-- Use **Generate new email** for an address without filling.
-- Use **Generate + Fill** to make a new profile and fill the current page.
-- Right-click the extension icon for **Settings** or **History**.
-- Right-click an editable page field for **Generate and fill Plover Filler profile**.
+- Click the extension icon to generate an email and fill the active page.
+- Use **Generate new email** to create and copy a new email without filling.
+- Use **Generate + Fill** to generate a new profile and fill the current page.
+- Use **Copy** to copy the current email.
+- Use **Fill** to fill the current page with the current profile.
 
-## Permissions
+### Keyboard shortcuts
 
-- `storage` — local settings, counters, and history
-- `clipboardWrite` — copy generated email addresses
-- `activeTab` and `scripting` — interact with the active tab after a user action
-- `contextMenus` — editable-field generation plus action-icon Settings/History shortcuts
-- `http://*/*` and `https://*/*` content-script matches — fill ordinary website forms
+- `Ctrl+Shift+E` — generate and copy a test email
+- `Ctrl+Shift+F` — generate, copy, and fill the active page
+
+### Context menus
+
+- Right-click an editable field for **Generate and fill Plover Filler profile**
+- Right-click the extension icon for **Settings**
+
+## Settings
+
+Settings are stored locally per Chrome profile and include:
+
+- Name prefix and suffix
+- Alias prefix
+- Domain
+- Department
+- Email mode
+- Company
+- Other-text prefix and suffix
+- Default country
+- Theme
+- History limit
+- Auto-copy
+
+## History
+
+The History page lets you:
+
+- Search generated emails
+- Copy a generated email
+- Delete one entry
+- Clear all history
+- Reset local department counters
+- Export history to CSV
 
 ## Limitations
 
-The extension cannot fill browser-internal pages, closed shadow roots, cross-origin frames, or forms that reject scripted input. It uses the native value setter and bubbling `input`/`change` events for common React, Vue, Angular, WordPress, WooCommerce, Elementor, Shopify, HubSpot, Gravity Forms, Fluent Forms, Contact Form 7, and WPForms fields.
-
-All email history and settings remain in the local Chrome profile. Plover Filler never sends generated data to a remote service.
+Plover Filler works on normal web pages and common form controls. It cannot reliably fill browser-internal pages, closed shadow roots, cross-origin frames, or forms that block scripted input.
 
 ## Smoke checks
 
@@ -59,8 +109,8 @@ Run:
 node tests\node-smoke.js
 ```
 
-Or open [tests/smoke.html](tests/smoke.html) in a browser for pure generation/profile checks.
+You can also open `tests/smoke.html` in a browser for generation checks.
 
-## ZIP package
+## Package
 
-The ready-to-load package is [package/plover-filler.zip](package/plover-filler.zip). It contains `manifest.json` at its root.
+A ready-to-load ZIP is available at `package/plover-filler.zip`.
