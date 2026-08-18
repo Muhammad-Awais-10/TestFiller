@@ -6,100 +6,46 @@ const tabs = [...document.querySelectorAll(".tabs a")];
 const historyList = document.querySelector("#history");
 const search = document.querySelector("#search");
 const historySummary = document.querySelector("#historySummary");
+const saveButton = document.querySelector(".save-button");
+const toast = document.querySelector("#toast");
+const confirmDialog = document.querySelector("#confirmDialog");
+const confirmTitle = document.querySelector("#confirmTitle");
+const confirmMessage = document.querySelector("#confirmMessage");
+const confirmAction = document.querySelector("#confirmAction");
 const fields = Object.fromEntries(["namePrefix", "nameSuffix", "aliasPrefix", "domain", "department", "mode", "company", "otherPrefix", "otherSuffix", "defaultCountry", "theme", "historyLimit", "autoCopy"].map((id) => [id, document.querySelector(`#${id}`)]));
 const countryButton = document.querySelector("#countryButton");
 const countryList = document.querySelector("#countryList");
 const countrySearch = document.querySelector("#countrySearch");
 const countryOptions = document.querySelector("#countryOptions");
 let history = [];
+let initialSettings = null;
+let toastTimer = 0;
+let pendingConfirm = null;
 
 function send(type, payload = {}) { return chrome.runtime.sendMessage({ type, ...payload }); }
-function setStatus(text, error = false) { status.textContent = text; status.className = error ? "error" : ""; }
-
-function downloadCsv(history) {
-  const header = ["Email", "Department", "Style", "Domain", "Submission URL", "Generated at"];
-  const rows = history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.submissionUrl || "", entry.createdAt]);
-  const csv = [header, ...rows].map((row) => row.map(WebPlover.csvCell).join(",")).join("\r\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  const link = document.createElement("a");
-  link.href = url; link.download = "plover-filler-email-history.csv"; link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
+function setStatus(text, error = false) { status.textContent = text; status.className = error ? "status error" : "status"; }
+function showToast(message) { toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 1800); }
+function settingsSnapshot() { return Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, key === "autoCopy" ? field.checked : field.value])); }
+function hasChanges() { if (!initialSettings) return false; return JSON.stringify(settingsSnapshot()) !== JSON.stringify(initialSettings); }
+function syncSaveState() { saveButton.disabled = !hasChanges(); }
+function downloadCsv(history) { const header = ["Email", "Department", "Style", "Domain", "Submission URL", "Generated at"]; const rows = history.map((entry) => [entry.email, entry.department, entry.mode, entry.domain, entry.submissionUrl || "", entry.createdAt]); const csv = [header, ...rows].map((row) => row.map(WebPlover.csvCell).join(",")).join("\r\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); const link = document.createElement("a"); link.href = url; link.download = "testfiller-email-history.csv"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0); }
 function formatDate(value) { return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
-
-function renderHistory() {
-  const term = search.value.trim().toLowerCase();
-  const entries = term ? history.filter((entry) => Object.values(entry).join(" ").toLowerCase().includes(term)) : history;
-  historySummary.textContent = `${entries.length} of ${history.length} generated emails`;
-  historyList.replaceChildren();
-  if (!entries.length) {
-    const empty = document.createElement("li"); empty.className = "empty"; empty.textContent = history.length ? "No entries match your search." : "No generated emails yet."; historyList.append(empty); return;
-  }
-  entries.forEach((entry) => {
-    const item = document.createElement("li"); item.className = "entry";
-    const copy = document.createElement("div"); copy.className = "entry-copy";
-    const email = document.createElement("p"); email.className = "email"; email.textContent = entry.email;
-    const meta = document.createElement("p"); meta.className = "metadata"; meta.textContent = `${entry.department} · ${entry.mode} · ${formatDate(entry.createdAt)}`;
-    const url = document.createElement("a"); url.className = "submission-url"; url.textContent = entry.submissionUrl || "Not filled"; if (entry.submissionUrl) { url.href = entry.submissionUrl; url.target = "_blank"; url.rel = "noopener noreferrer"; }
-    copy.append(email, meta, url);
-    const copyButton = document.createElement("button"); copyButton.type = "button"; copyButton.textContent = "Copy"; copyButton.addEventListener("click", async () => { await navigator.clipboard.writeText(entry.email); historySummary.textContent = `Copied ${entry.email}`; });
-    const deleteButton = document.createElement("button"); deleteButton.type = "button"; deleteButton.textContent = "Delete"; deleteButton.className = "danger"; deleteButton.addEventListener("click", async () => { await send("DELETE_HISTORY", { id: entry.id }); history = history.filter((itemEntry) => itemEntry.id !== entry.id); renderHistory(); });
-    item.append(copy, copyButton, deleteButton); historyList.append(item);
-  });
-}
-
-function showTab() {
-  const showHistory = location.hash === "#history";
-  settingsPanel.hidden = showHistory; historyPanel.hidden = !showHistory;
-  tabs.forEach((tab) => tab.classList.toggle("active", tab.hash === (showHistory ? "#history" : "#settings")));
-  if (showHistory) renderHistory();
-}
-
-async function initialize() {
-  Object.entries(WebPlover.DEPARTMENTS).forEach(([value, label]) => fields.department.add(new Option(label, value)));
-  Object.entries(WebPlover.MODES).forEach(([value, label]) => fields.mode.add(new Option(label, value)));
-  Object.entries(WebPlover.COUNTRIES).forEach(([value, label]) => {
-    fields.defaultCountry.add(new Option(label, value));
-    const option = document.createElement("button"); option.type = "button"; option.role = "option"; option.textContent = label; option.dataset.search = `${value} ${label}`.toLowerCase();
-    option.addEventListener("click", () => { fields.defaultCountry.value = value; countryButton.textContent = label; countryList.hidden = true; countryButton.setAttribute("aria-expanded", "false"); });
-    countryOptions.append(option);
-  });
-  const response = await send("GET_STATE");
-  if (!response.ok) throw new Error(response.message);
-  const settings = response.state.settings;
-  history = response.state.history;
-  if (settings.theme !== "system") document.documentElement.dataset.theme = settings.theme;
-  Object.entries(fields).forEach(([key, field]) => { field[key === "autoCopy" ? "checked" : "value"] = settings[key]; });
-  countryButton.textContent = WebPlover.COUNTRIES[fields.defaultCountry.value];
-  showTab();
-}
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const settings = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, key === "autoCopy" ? field.checked : field.value]));
-  const response = await send("SAVE_SETTINGS", { settings });
-  if (response.ok) {
-    if (response.settings.theme === "system") delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = response.settings.theme;
-  }
-  setStatus(response.ok ? "Settings saved." : response.message, !response.ok);
-});
-
-document.querySelector("#resetCounters").addEventListener("click", async () => {
-  if (!confirm("Reset all local department counters? Existing history will stay.")) return;
-  await send("RESET_COUNTERS"); setStatus("Local department counters reset.");
-});
-
+function openConfirm({ title, message, action }) { confirmTitle.textContent = title; confirmMessage.textContent = message; confirmAction.textContent = action; pendingConfirm = action; if (confirmDialog.showModal) confirmDialog.showModal(); else confirm(message); }
+async function confirmAsync(options) { return new Promise((resolve) => { pendingConfirm = resolve; confirmTitle.textContent = options.title; confirmMessage.textContent = options.message; confirmAction.textContent = options.action; if (confirmDialog.showModal) confirmDialog.showModal(); else resolve(confirm(options.message)); }); }
+confirmDialog?.addEventListener("close", () => { if (typeof pendingConfirm === "function") { pendingConfirm(confirmDialog.returnValue === "confirm"); pendingConfirm = null; } });
+confirmAction.addEventListener("click", () => { if (typeof pendingConfirm === "function") { pendingConfirm(true); pendingConfirm = null; } });
+function renderHistory() { const term = search.value.trim().toLowerCase(); const entries = term ? history.filter((entry) => Object.values(entry).join(" ").toLowerCase().includes(term)) : history; historySummary.textContent = term ? (entries.length ? `${entries.length} matching identities` : "No matching entries found") : `${entries.length} generated identities`; historyList.replaceChildren(); if (!entries.length) { const empty = document.createElement("li"); empty.className = "empty"; empty.textContent = history.length ? "No matching entries found. Try a different email, department, or URL." : "Generated identities will appear here after you use TestFiller on a form."; historyList.append(empty); return; } entries.forEach((entry) => { const item = document.createElement("li"); item.className = "entry"; const copy = document.createElement("div"); copy.className = "entry-copy"; const identity = document.createElement("div"); identity.className = "history-identity"; const mailIcon = document.createElement("span"); mailIcon.className = "history-mail-icon"; mailIcon.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; color: #4F46E5;"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>'; const identityContent = document.createElement("div"); identityContent.className = "history-identity-content"; const email = document.createElement("p"); email.className = "email"; email.textContent = entry.email; const meta = document.createElement("p"); meta.className = "metadata"; meta.textContent = `${entry.department} • ${entry.mode} • ${formatDate(entry.createdAt)}`; const url = document.createElement("a"); url.className = "submission-url"; url.textContent = entry.submissionUrl || "No submission URL recorded"; if (entry.submissionUrl) { url.href = entry.submissionUrl; url.target = "_blank"; url.rel = "noopener noreferrer"; } identityContent.append(email, meta); identity.append(mailIcon, identityContent); copy.append(identity, url); const copyButton = document.createElement("button"); copyButton.type = "button"; copyButton.className = "secondary"; copyButton.textContent = "Copy"; copyButton.addEventListener("click", async () => { await navigator.clipboard.writeText(entry.email); historySummary.textContent = `Copied ${entry.email}`; showToast("Email copied to clipboard"); }); const deleteButton = document.createElement("button"); deleteButton.type = "button"; deleteButton.textContent = "Delete"; deleteButton.className = "danger"; deleteButton.addEventListener("click", async () => { if (!await confirmAsync({ title: "Delete this history item?", message: "This action cannot be undone.", action: "Delete" })) return; await send("DELETE_HISTORY", { id: entry.id }); history = history.filter((itemEntry) => itemEntry.id !== entry.id); renderHistory(); }); item.append(copy, copyButton, deleteButton); historyList.append(item); }); }
+function showTab() { const showHistory = location.hash === "#history"; settingsPanel.hidden = showHistory; historyPanel.hidden = !showHistory; document.querySelector("#settingsIntro").hidden = showHistory; tabs.forEach((tab) => tab.classList.toggle("active", tab.hash === (showHistory ? "#history" : "#settings"))); if (showHistory) renderHistory(); }
+async function initialize() { Object.entries(WebPlover.DEPARTMENTS).forEach(([value, label]) => fields.department.add(new Option(label, value))); Object.entries(WebPlover.MODES).forEach(([value, label]) => fields.mode.add(new Option(label, value))); Object.entries(WebPlover.COUNTRIES).forEach(([value, label]) => { fields.defaultCountry.add(new Option(label, value)); const option = document.createElement("button"); option.type = "button"; option.role = "option"; option.textContent = label; option.dataset.search = `${value} ${label}`.toLowerCase(); option.addEventListener("click", () => { fields.defaultCountry.value = value; countryButton.textContent = label; countryList.hidden = true; countryButton.setAttribute("aria-expanded", "false"); syncSaveState(); }); countryOptions.append(option); }); const response = await send("GET_STATE"); if (!response.ok) throw new Error(response.message); const settings = response.state.settings; history = response.state.history; if (settings.theme !== "system") document.documentElement.dataset.theme = settings.theme; Object.entries(fields).forEach(([key, field]) => { field[key === "autoCopy" ? "checked" : "value"] = settings[key]; }); countryButton.textContent = WebPlover.COUNTRIES[fields.defaultCountry.value]; initialSettings = settingsSnapshot(); syncSaveState(); showTab(); }
+form.addEventListener("input", syncSaveState);
+form.addEventListener("change", syncSaveState);
+form.addEventListener("submit", async (event) => { event.preventDefault(); const settings = settingsSnapshot(); const response = await send("SAVE_SETTINGS", { settings }); if (response.ok) { if (response.settings.theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = response.settings.theme; initialSettings = settingsSnapshot(); syncSaveState(); showToast("Settings saved"); } setStatus(response.ok ? "" : response.message, !response.ok); });
+document.querySelector("#resetCounters").addEventListener("click", async () => { if (!await confirmAsync({ title: "Reset counters?", message: "Sequential test-data counters will restart.", action: "Reset" })) return; await send("RESET_COUNTERS"); showToast("Counter has been reset"); setStatus("Local department counters reset."); });
 countryButton.addEventListener("click", () => { const open = countryList.hidden; countryList.hidden = !open; countryButton.setAttribute("aria-expanded", String(open)); if (open) { countrySearch.value = ""; countryOptions.querySelectorAll("button").forEach((option) => { option.hidden = false; }); countrySearch.focus(); } });
 countrySearch.addEventListener("input", () => { const term = countrySearch.value.trim().toLowerCase(); countryOptions.querySelectorAll("button").forEach((option) => { option.hidden = !option.dataset.search.includes(term); }); });
 document.addEventListener("click", (event) => { if (!event.target.closest(".country-select")) { countryList.hidden = true; countryButton.setAttribute("aria-expanded", "false"); } });
 search.addEventListener("input", renderHistory);
-document.querySelector("#historyExport").addEventListener("click", () => downloadCsv(history));
-document.querySelector("#historyClear").addEventListener("click", async () => {
-  if (!confirm("Delete all locally stored email history? This cannot be undone.")) return;
-  await send("CLEAR_HISTORY"); history = []; renderHistory();
-});
+document.querySelector("#historyExport").addEventListener("click", () => { downloadCsv(history); showToast("History exported"); });
+document.querySelector("#historyClear").addEventListener("click", async () => { if (!await confirmAsync({ title: "Clear all history?", message: "This will permanently remove all stored generated identities from this browser.", action: "Clear history" })) return; await send("CLEAR_HISTORY"); history = []; renderHistory(); showToast("History cleared"); });
 window.addEventListener("hashchange", showTab);
-
 initialize().catch((error) => setStatus(error.message, true));
