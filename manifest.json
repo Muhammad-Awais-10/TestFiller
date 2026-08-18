@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Plover Filler",
+  "name": "TestFiller",
   "description": "Generate unique, clearly identifiable test emails and fill active form fields.",
   "version": "1.0.0",
   "action": {
-    "default_title": "Plover Filler",
+    "default_title": "TestFiller",
     "default_icon": {
       "16": "assets/icon-16.png",
       "32": "assets/icon-32.png"
@@ -17,11 +17,11 @@
   "commands": {
     "generate-email": {
       "suggested_key": { "default": "Ctrl+Shift+E" },
-      "description": "Generate and copy a Plover Filler test email"
+      "description": "Generate and copy a TestFiller test email"
     },
     "generate-and-fill": {
       "suggested_key": { "default": "Ctrl+Shift+F" },
-      "description": "Generate, copy, and fill a Plover Filler test email"
+      "description": "Generate, copy, and fill a TestFiller test email"
     }
   },
   "icons": {

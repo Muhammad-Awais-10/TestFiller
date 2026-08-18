@@ -6,7 +6,7 @@
 body { width: 350px; margin: 0; background: var(--canvas); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .popup-shell { padding: 20px; }
 header { display: flex; gap: 11px; align-items: center; margin-bottom: 19px; }
-.brand-mark { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 11px; background: var(--brand); color: white; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.brand-mark { width: 39px; height: 39px; border-radius: 11px; object-fit: contain; }
 .eyebrow { margin: 0 0 1px; color: var(--brand); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
 h1 { margin: 0; font-size: 17px; line-height: 1.15; }
 label, .email-label { display: block; margin: 12px 0 5px; color: var(--muted); font-size: 12px; font-weight: 700; }

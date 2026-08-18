@@ -3,65 +3,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plover Filler Settings</title>
+  <title>TestFiller Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <main>
-    <div class="extension-brand"><img class="extension-icon" src="../../assets/icon-48.png" alt=""><span>Plover Filler</span></div>
-    <nav class="tabs" aria-label="Settings sections"><a href="#settings">Settings</a><a href="#history">History</a></nav>
-    <section id="settingsPanel">
-    <form id="settingsForm">
-      <fieldset>
-        <legend>Name</legend>
-        <div class="field-grid">
-          <label>Name prefix <input id="namePrefix" type="text" maxlength="30" placeholder="Dr."></label>
-          <label>Name suffix <input id="nameSuffix" type="text" maxlength="30" placeholder="Jr."></label>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <img class="brand-icon" src="../../assets/logo.png" alt="TestFiller">
+        <div class="brand-copy">
+          <div class="brand-name">TestFiller</div>
+          <div class="brand-desc">Form Autofill &amp; Testing Tool</div>
         </div>
-      </fieldset>
-      <fieldset>
-        <legend>Email generation</legend>
-        <div class="field-grid">
-          <label>Alias prefix <input id="aliasPrefix" type="text" maxlength="63" placeholder="Uses department" aria-describedby="aliasHelp"></label>
-          <label>Domain <input id="domain" type="text" inputmode="url" placeholder="example.com" aria-describedby="domainHelp"></label>
-        </div>
-        <p id="aliasHelp">The text before the number. Leave blank to use the default department.</p>
-        <p id="domainHelp">The part after @. Leave blank to use example.com.</p>
-        <div class="field-grid">
-          <label>Default department <select id="department"></select></label>
-          <label>Generation style <select id="mode"></select></label>
-        </div>
-        <div class="reset-counters"><button id="resetCounters" type="button">Reset counters</button></div>
-      </fieldset>
-      <fieldset>
-        <legend>Other fields</legend>
-        <div class="field-grid">
-          <label>Company <input id="company" type="text" maxlength="100" placeholder="Example Company"></label>
-          <label>Other prefix <input id="otherPrefix" type="text" maxlength="100"></label>
-          <label>Other suffix <input id="otherSuffix" type="text" maxlength="100"></label>
-        </div>
-      </fieldset>
-      <label>Country
-        <div class="country-select">
-          <button id="countryButton" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
-          <div id="countryList" class="country-list" role="listbox" hidden><input id="countrySearch" type="search" placeholder="Search country or code" aria-label="Search countries"><div id="countryOptions"></div></div>
-          <select id="defaultCountry" class="sr-only"></select>
-        </div>
-      </label>
-      <label>Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
-      <label>History entries (1–500) <input id="historyLimit" type="number" min="1" max="500"></label>
-      <label class="check"><input id="autoCopy" type="checkbox"> Automatically copy each generated email</label>
-      <button class="primary" type="submit">Save settings</button>
-    </form>
-    <p id="status" role="status" aria-live="polite"></p>
+      </div>
+      <nav class="tabs" aria-label="Settings sections">
+        <a href="#settings">Settings</a>
+        <a href="#history">History</a>
+      </nav>
+    </header>
+
+    <section id="settingsIntro" class="page-intro">
+      <h1>Settings</h1>
+      <p>Configure the test data TestFiller uses when filling forms.</p>
     </section>
+
+    <section id="settingsPanel" class="panel">
+      <form id="settingsForm" class="settings-form">
+        <section class="section-block">
+          <div class="section-title"><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"></circle><path d="M5 19c1.6-3.2 4.6-5 7-5s5.4 1.8 7 5"></path></svg><h2>1. Identity</h2></div>
+          <div class="field-grid two-up">
+            <label>Name prefix <input id="namePrefix" type="text" maxlength="30" placeholder="Dr."></label>
+            <label>Name suffix <input id="nameSuffix" type="text" maxlength="30" placeholder="Jr"></label>
+          </div>
+          <label>Company <input id="company" type="text" maxlength="100" placeholder="Example Company"></label>
+        </section>
+        <div class="section-divider" aria-hidden="true"></div>
+
+        <section class="section-block">
+          <div class="section-title"><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2"></rect><path d="M5 8l7 5 7-5"></path></svg><h2>2. Email generation</h2></div>
+          <div class="field-grid two-up">
+            <label>Alias prefix <input id="aliasPrefix" type="text" maxlength="63" placeholder="asdfg"><span class="help">Used before the sequential number.</span></label>
+            <label>Domain <input id="domain" type="text" inputmode="url" placeholder="example.com"><span class="help">Used after @ in generated emails.</span></label>
+          </div>
+          <div class="field-grid two-up">
+            <label>Default department <select id="department"></select></label>
+            <label>Generation style <select id="mode"></select></label>
+          </div>
+          <div class="reset-action"><button id="resetCounters" class="secondary reset-button" type="button"><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.36"></path><path d="M18.5 5.5v4h-4"></path><path d="M21 12a9 9 0 0 1-15.5 6.36"></path><path d="M5.5 18.5v-4h4"></path></svg><span>Reset counters</span></button><span class="help reset-help">Restart sequential numbering from the beginning.</span></div>
+        </section>
+        <div class="section-divider" aria-hidden="true"></div>
+
+        <section class="section-block">
+          <div class="section-title"><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="4.5" height="4.5" rx="1"></rect><rect x="14" y="5.5" width="4.5" height="4.5" rx="1"></rect><rect x="5.5" y="14" width="4.5" height="4.5" rx="1"></rect><rect x="14" y="14" width="4.5" height="4.5" rx="1"></rect></svg><h2>3. Additional fields</h2></div>
+          <div class="field-grid two-up">
+            <label>Other prefix <input id="otherPrefix" type="text" maxlength="100"></label>
+            <label>Other suffix <input id="otherSuffix" type="text" maxlength="100"></label>
+          </div>
+        </section>
+        <div class="section-divider" aria-hidden="true"></div>
+
+        <section class="section-block">
+          <div class="section-title"><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 0 1 0 2.8l-.7.7a2 2 0 0 1-2.8 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V21a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 0 1-2.8 0l-.7-.7a2 2 0 0 1 0-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H3a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 0 1 0-2.8l.7-.7a2 2 0 0 1 2.8 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V3a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H21a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-.2a1 1 0 0 0-.9.6z"></path></svg><h2>4. Preferences</h2></div>
+          <div class="field-grid two-up">
+            <label>Country
+              <div class="country-select">
+                <button id="countryButton" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
+                <div id="countryList" class="country-list" role="listbox" hidden><input id="countrySearch" type="search" placeholder="Search country or code" aria-label="Search countries"><div id="countryOptions"></div></div>
+                <select id="defaultCountry" class="sr-only"></select>
+              </div>
+            </label>
+            <label>History limit <input id="historyLimit" type="number" min="1" max="500"><span class="help">Maximum number of generated identities kept locally.</span></label>
+          </div>
+          <div class="switch-row"><span class="switch"><input id="autoCopy" type="checkbox"><span class="switch-ui" aria-hidden="true"></span></span><div class="switch-copy"><span class="switch-title">Automatically copy generated email</span><span class="help">Copies each newly generated email to your clipboard.</span></div></div>
+        </section>
+        <div class="section-divider" aria-hidden="true"></div>
+
+        <section class="section-block">
+          <div class="section-title"><svg class="section-icon section-icon--palette" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 0-18 8 8 0 0 1 0 16c-.55 0-1 .45-1 1s.45 1 1 1z"></path><circle cx="7.5" cy="10.5" r="1"></circle><circle cx="12" cy="8.5" r="1"></circle><circle cx="15.5" cy="12" r="1"></circle><path d="M14.5 15.5c-.8 0-1.5.7-1.5 1.5 0 .8.7 1.5 1.5 1.5"></path></svg><h2>5. Appearance</h2></div>
+          <label class="theme-field">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        </section>
+
+        <button class="primary save-button" type="submit" disabled><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"></path><path d="M8 4v6h8V4"></path><path d="M8 14h8"></path></svg><span>Save settings</span></button>
+      </form>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
     <section id="historyPanel" hidden aria-labelledby="historyHeading">
-      <h2 id="historyHeading">Email history</h2>
-      <div class="history-toolbar"><label class="sr-only" for="search">Search history</label><input id="search" type="search" placeholder="Search email, department, or submission URL"><button id="historyExport" type="button">Export CSV</button><button id="historyClear" type="button" class="danger">Clear all</button></div>
-      <p id="historySummary" role="status" aria-live="polite"></p>
-      <ol id="history"></ol>
+      <section class="page-intro">
+        <h1 id="historyHeading">History</h1>
+        <p>Review generated identities and related test activity.</p>
+      </section>
+      <div class="history-toolbar">
+        <label class="search-wrap"><span class="sr-only" for="search">Search history</span><span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input id="search" type="search" placeholder="Search email, department, or URL"></label>
+        <div class="history-actions"><button id="historyExport" type="button" class="secondary"><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg><span>Export CSV</span></button><button id="historyClear" type="button" class="danger"><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path><path d="M10 10v6"></path><path d="M14 10v6"></path></svg><span>Clear all</span></button></div>
+      </div>
+      <p id="historySummary" class="status" role="status" aria-live="polite"></p>
+      <ol id="history" class="history-list"></ol>
     </section>
   </main>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="confirmDialog" class="confirm-dialog">
+    <form method="dialog" class="confirm-card">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmMessage"></p>
+      <div class="confirm-actions"><button value="cancel" class="secondary" type="submit">Cancel</button><button id="confirmAction" value="confirm" class="primary" type="submit"></button></div>
+    </form>
+  </dialog>
   <script src="../shared/constants.js"></script>
   <script src="../shared/generator.js"></script>
   <script src="options.js"></script>

@@ -27,9 +27,14 @@ async function sendToTab(tab, message) {
   try {
     return await chrome.tabs.sendMessage(tab.id, message);
   } catch (error) {
-    if (!isMissingReceiverError(error) || !canInjectIntoTab(tab)) throw error;
-    await injectContentScript(tab.id);
-    return await chrome.tabs.sendMessage(tab.id, message);
+    if (!isMissingReceiverError(error)) throw error;
+    if (!canInjectIntoTab(tab)) return { ok: false, message: "This page does not support autofill." };
+    try {
+      await injectContentScript(tab.id);
+      return await chrome.tabs.sendMessage(tab.id, message);
+    } catch {
+      return { ok: false, message: "This page does not support autofill." };
+    }
   }
 }
 
@@ -111,7 +116,8 @@ chrome.runtime.onStartup.addListener(createContextMenu);
 
 chrome.action.onClicked.addListener(async () => {
   try {
-    await generateForActiveTab({ fill: true, copy: true });
+    const result = await generateForActiveTab({ fill: true, copy: true });
+    if (result.fillResult?.ok === false && result.fillResult.message !== "This page does not support autofill.") console.error("Plover Filler toolbar action failed", result.fillResult);
   } catch (error) {
     console.error("Plover Filler toolbar action failed", error);
   }
@@ -122,10 +128,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_GENERATE_FILL || !tab?.id) return;
   try {
     const result = await queuedGeneration(tab.url || "");
-    await Promise.all([
+    const [fillResult, copyResult] = await Promise.all([
       fillAndRecord(tab, result.record),
       sendToTab(tab, { type: "COPY_EMAIL", email: result.record.email })
     ]);
+    if (fillResult?.ok === false && fillResult.message !== "This page does not support autofill.") console.error("Plover Filler context menu action failed", fillResult);
+    if (copyResult?.ok === false) console.error("Plover Filler context menu action failed", copyResult);
   } catch (error) {
     console.error("Plover Filler context menu action failed", error);
   }
@@ -133,8 +141,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 chrome.commands.onCommand.addListener(async (command) => {
   try {
-    if (command === "generate-email") await generateForActiveTab({ copy: true });
-    if (command === "generate-and-fill") await generateForActiveTab({ fill: true, copy: true });
+    const result = command === "generate-email"
+      ? await generateForActiveTab({ copy: true })
+      : command === "generate-and-fill"
+        ? await generateForActiveTab({ fill: true, copy: true })
+        : null;
+    if (result?.fillResult?.ok === false && result.fillResult.message !== "This page does not support autofill.") console.error("Plover Filler command failed", result.fillResult);
+    if (result?.copyResult?.ok === false) console.error("Plover Filler command failed", result.copyResult);
   } catch (error) {
     console.error("Plover Filler command failed", error);
   }

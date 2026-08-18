@@ -27,7 +27,7 @@ function render() {
     copy.append(email, meta, website);
     const copyButton = document.createElement("button"); copyButton.textContent = "Copy"; copyButton.addEventListener("click", async () => { await navigator.clipboard.writeText(entry.email); summary.textContent = `Copied ${entry.email}`; });
     const deleteButton = document.createElement("button"); deleteButton.textContent = "Delete"; deleteButton.className = "danger"; deleteButton.addEventListener("click", async () => { await send("DELETE_HISTORY", { id: entry.id }); history = history.filter((itemEntry) => itemEntry.id !== entry.id); render(); });
-    item.append(copy, copyButton, deleteButton); list.append(item);
+    const actions = document.createElement("div"); actions.className = "entry-actions"; actions.append(copyButton, deleteButton); item.append(copy, actions); list.append(item);
   });
 }
 

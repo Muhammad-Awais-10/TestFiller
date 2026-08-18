@@ -3,16 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plover Filler History</title>
+  <title>TestFiller History</title>
   <link rel="stylesheet" href="history.css">
 </head>
 <body>
-  <main>
-    <header><a href="popup.html">Plover Filler</a><h1>Email history</h1></header>
-    <div class="toolbar"><label class="sr-only" for="search">Search history</label><input id="search" type="search" placeholder="Search email, department, or website"><button id="export">Export CSV</button><button id="clear" class="danger">Clear all</button></div>
-    <p id="summary" role="status" aria-live="polite"></p>
-    <ol id="history"></ol>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <img class="brand-icon" src="../../assets/logo.png" alt="TestFiller">
+        <div class="brand-copy">
+          <div class="brand-name">TestFiller</div>
+          <div class="brand-desc">Form Autofill &amp; Testing Tool</div>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Settings sections">
+        <a href="options.html#settings">Settings</a>
+        <a href="options.html#history" class="active">History</a>
+      </nav>
+    </header>
+
+    <section class="page-intro">
+      <h1>History</h1>
+      <p>Review generated identities and related test activity.</p>
+    </section>
+
+    <section class="panel">
+      <div class="history-toolbar">
+        <label class="search-wrap"><span class="sr-only" for="search">Search history</span><span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input id="search" type="search" placeholder="Search email, department, or URL"></label>
+        <div class="history-actions"><button id="export" type="button" class="secondary"><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg><span>Export CSV</span></button><button id="clear" type="button" class="danger"><svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M6 6l1 14h10l1-14"></path><path d="M10 10v6"></path><path d="M14 10v6"></path></svg><span>Clear all</span></button></div>
+      </div>
+      <p id="summary" class="status" role="status" aria-live="polite"></p>
+      <ol id="history" class="history-list"></ol>
+    </section>
   </main>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="confirmDialog" class="confirm-dialog">
+    <form method="dialog" class="confirm-card">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmMessage"></p>
+      <div class="confirm-actions"><button value="cancel" class="secondary" type="submit">Cancel</button><button id="confirmAction" value="confirm" class="primary" type="submit"></button></div>
+    </form>
+  </dialog>
   <script src="../shared/constants.js"></script>
   <script src="../shared/generator.js"></script>
   <script src="history.js"></script>
