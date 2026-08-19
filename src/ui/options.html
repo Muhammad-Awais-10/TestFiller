@@ -101,7 +101,51 @@
       <ol id="history" class="history-list"></ol>
     </section>
   </main>
+  <div class="floating-actions" aria-label="Quick actions">
+    <button id="supportFloatingButton" type="button" class="floating-action" aria-label="Support" title="Support">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+      </svg>
+    </button>
+
+    <button type="button" class="floating-action" aria-label="Rate TestFiller" title="Rate TestFiller">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2l-5-4.9 6.9-1z"></path>
+      </svg>
+    </button>
+
+    <button type="button" class="floating-action" aria-label="Visit developer" title="Visit developer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 3h6v6"></path>
+        <path d="M10 14 21 3"></path>
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+      </svg>
+    </button>
+  </div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="supportDialog" class="support-dialog">
+    <form id="supportForm" class="support-card" method="dialog">
+      <div class="support-header">
+        <h2>Contact support</h2>
+        <p class="support-subtitle">Report a problem or suggest a new feature.</p>
+      </div>
+      <label for="supportType">What can we help with?
+        <select id="supportType" name="type">
+          <option value="bug">Report a bug</option>
+          <option value="feature">Request a feature</option>
+        </select>
+      </label>
+      <label for="supportEmail">Your email
+        <input id="supportEmail" name="email" type="email" placeholder="you@example.com">
+        <span class="help">Optional — provide it if you'd like a reply.</span>
+      </label>
+      <label for="supportMessage">Message
+        <textarea id="supportMessage" name="message" rows="5" required placeholder="Describe the problem or feature request..."></textarea>
+        <span id="supportError" class="support-error" hidden></span>
+      </label>
+      <div class="support-actions"><button id="supportCancel" class="secondary" type="button">Cancel</button><button id="supportSend" class="primary" type="submit">Send</button></div>
+    </form>
+  </dialog>
   <dialog id="confirmDialog" class="confirm-dialog">
     <form method="dialog" class="confirm-card">
       <h2 id="confirmTitle"></h2>
