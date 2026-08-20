@@ -52,7 +52,7 @@ async function generateEmail(pageUrl) {
   if (used.has(email)) throw new Error("Could not allocate a unique local test email. Reset counters only after clearing history.");
 
   counters[department] = counter;
-  const profile = WebPlover.contactProfile({ email, allocationId: `${department}-${counter}`, country: settings.defaultCountry, namePrefix: settings.namePrefix, nameSuffix: settings.nameSuffix, otherPrefix: settings.otherPrefix, otherSuffix: settings.otherSuffix, company: settings.company });
+  const profile = WebPlover.contactProfile({ email, allocationId: `${department}-${counter}`, country: settings.defaultCountry, namePrefix: settings.namePrefix, nameSuffix: settings.nameSuffix, otherPrefix: settings.otherPrefix, otherSuffix: settings.otherSuffix, company: settings.company, department });
   const record = {
     id: crypto.randomUUID(),
     email,
@@ -117,7 +117,7 @@ chrome.runtime.onStartup.addListener(createContextMenu);
 chrome.action.onClicked.addListener(async () => {
   try {
     const result = await generateForActiveTab({ fill: true, copy: true });
-    if (result.fillResult?.ok === false && result.fillResult.message !== "This page does not support autofill.") console.error("Plover Filler toolbar action failed", result.fillResult);
+    if (result.fillResult?.ok === false && !["This page does not support autofill.", "No empty safe contact fields were found on this page."].includes(result.fillResult.message)) console.error("Plover Filler toolbar action failed", result.fillResult.message);
   } catch (error) {
     console.error("Plover Filler toolbar action failed", error);
   }
@@ -132,8 +132,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       fillAndRecord(tab, result.record),
       sendToTab(tab, { type: "COPY_EMAIL", email: result.record.email })
     ]);
-    if (fillResult?.ok === false && fillResult.message !== "This page does not support autofill.") console.error("Plover Filler context menu action failed", fillResult);
-    if (copyResult?.ok === false) console.error("Plover Filler context menu action failed", copyResult);
+    if (fillResult?.ok === false && !["This page does not support autofill.", "No empty safe contact fields were found on this page."].includes(fillResult.message)) console.error("Plover Filler context menu action failed", fillResult.message);
+    if (copyResult?.ok === false) console.error("Plover Filler context menu action failed", copyResult.message);
   } catch (error) {
     console.error("Plover Filler context menu action failed", error);
   }
@@ -146,8 +146,8 @@ chrome.commands.onCommand.addListener(async (command) => {
       : command === "generate-and-fill"
         ? await generateForActiveTab({ fill: true, copy: true })
         : null;
-    if (result?.fillResult?.ok === false && result.fillResult.message !== "This page does not support autofill.") console.error("Plover Filler command failed", result.fillResult);
-    if (result?.copyResult?.ok === false) console.error("Plover Filler command failed", result.copyResult);
+    if (result?.fillResult?.ok === false && !["This page does not support autofill.", "No empty safe contact fields were found on this page."].includes(result.fillResult.message)) console.error("Plover Filler command failed", result.fillResult.message);
+    if (result?.copyResult?.ok === false) console.error("Plover Filler command failed", result.copyResult.message);
   } catch (error) {
     console.error("Plover Filler command failed", error);
   }

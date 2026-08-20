@@ -81,7 +81,7 @@ WebPlover.buildEmail = function ({ aliasPrefix, department, mode, counter, domai
   return `${localPart}@${WebPlover.normalizeDomain(domain)}`;
 };
 
-WebPlover.contactProfile = function ({ email, allocationId = email, country = "US", namePrefix = "", nameSuffix = "", otherPrefix = "", otherSuffix = "", company = "Example Company" }) {
+WebPlover.contactProfile = function ({ email, allocationId = email, country = "US", namePrefix = "", nameSuffix = "", otherPrefix = "", otherSuffix = "", company = "Example Company", department = "qa" }) {
   const index = Array.from(String(allocationId)).reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 7);
   const firstNames = ["Avery", "Jordan", "Morgan", "Riley", "Taylor", "Casey", "Quinn", "Cameron"];
   const lastNames = ["Parker", "Reed", "Hayes", "Sutton", "Blake", "Rowan", "Ellis", "Brooks"];
@@ -107,6 +107,7 @@ WebPlover.contactProfile = function ({ email, allocationId = email, country = "U
     fullName: [prefix, firstName, lastName, suffix].filter(Boolean).join(" "),
     email,
     company: String(company || "Example Company").trim(),
+    department: String(department || "qa").trim() || "qa",
     website: "https://example.com",
     jobTitle: "Test Manager",
     otherText: [String(otherPrefix || "").trim(), lorem, String(otherSuffix || "").trim()].filter(Boolean).join(" "),

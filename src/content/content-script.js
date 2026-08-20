@@ -62,13 +62,61 @@
   }
 
   const filledValues = new WeakMap();
+  const filledIdentities = new Map();
 
   function fieldValue(element) {
     return element.isContentEditable ? element.textContent : String(element.value || "");
   }
 
+  function normalizeTrackedValue(element, value) {
+    const text = String(value || "").trim();
+    const type = (element.type || "").toLowerCase();
+    if (type === "tel") return text.replace(/\D+/g, "");
+    if (type === "number") return text === "" ? "" : String(Number(text));
+    return text;
+  }
+
+  function normalizeIdentityPart(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function fieldIdentityKeys(element) {
+    const type = normalizeIdentityPart(element.type || "");
+    const autocomplete = normalizeIdentityPart(element.getAttribute("autocomplete") || "");
+    const label = normalizeIdentityPart(labelText(element));
+    const aria = normalizeIdentityPart(element.getAttribute("aria-label") || "");
+    const dataSlug = normalizeIdentityPart(element.getAttribute("data-slug") || "");
+    const name = normalizeIdentityPart(element.name || "");
+    const id = normalizeIdentityPart(element.id || "");
+    const keys = [];
+    if (name) keys.push(`name:${name}`);
+    if (dataSlug) keys.push(`slug:${dataSlug}`);
+    if (autocomplete) keys.push(`autocomplete:${autocomplete}`);
+    if (aria) keys.push(`aria:${aria}`);
+    if (label) keys.push(`label:${label}`);
+    if (id) keys.push(`id:${id}`);
+    if (name && type) keys.push(`name:${name}|type:${type}`);
+    if (dataSlug && type) keys.push(`slug:${dataSlug}|type:${type}`);
+    if (autocomplete && type) keys.push(`autocomplete:${autocomplete}|type:${type}`);
+    if (aria && type) keys.push(`aria:${aria}|type:${type}`);
+    if (label && type) keys.push(`label:${label}|type:${type}`);
+    if (id && type) keys.push(`id:${id}|type:${type}`);
+    return keys;
+  }
+
+  function trackedValue(element) {
+    const keys = fieldIdentityKeys(element);
+    for (const key of keys) {
+      if (filledIdentities.has(key)) return filledIdentities.get(key);
+    }
+    return filledValues.get(element) || "";
+  }
+
   function canFill(element) {
-    return !fieldValue(element).trim() || filledValues.get(element) === fieldValue(element);
+    const current = fieldValue(element);
+    if (!current.trim()) return true;
+    const tracked = normalizeTrackedValue(element, trackedValue(element));
+    return tracked && normalizeTrackedValue(element, current) === tracked;
   }
 
   function allCandidates(root = document) {
@@ -203,24 +251,166 @@
     return rule.hint.test(hints(element)) ? 700 : -1;
   }
 
-  function bestField(candidates, rule, claimed, key) {
-    let best = null;
-    let bestScore = -1;
-    for (const element of candidates) {
-      if (claimed.has(element)) continue;
-      const nextScore = score(element, rule, key);
-      if (nextScore > bestScore) { best = element; bestScore = nextScore; }
-    }
-    return best;
-  }
-
   function knownField(element) {
     const autocomplete = (element.getAttribute("autocomplete") || "").toLowerCase().trim().split(/\s+/).pop();
     const type = (element.type || "").toLowerCase();
     return Object.entries(FIELD_RULES).some(([key, rule]) =>
       compatible(element, key) && (rule.autocomplete.includes(autocomplete) || rule.hint.test(hints(element)) ||
-        (key === "email" && type === "email") || (key === "phone" && type === "tel") || (key === "website" && type === "url"))
+        (key === "email" && type === "email") || (key === "phone" && type === "tel") || (key === "website" && type === "url") ||
+        (key === "fullName" && /\bname\b/i.test(hints(element))))
     );
+  }
+
+  function classifyField(element) {
+    const type = (element.type || "").toLowerCase();
+    const text = hints(element).toLowerCase();
+    const autocomplete = (element.getAttribute("autocomplete") || "").toLowerCase().trim().split(/\s+/).pop();
+    if (!eligible(element) || !canFill(element)) return null;
+    if (type === "email") return "email";
+    if (type === "tel") return "phone";
+    if (type === "url") return "website";
+    if (type === "number") return /decimal|price|amount|cost|rate|ratio/.test(text) ? "decimal" : /zip|postal|code|phone|mobile|tel|contact/.test(text) ? "postalCode" : "number";
+    if (autocomplete === "given-name") return "firstName";
+    if (autocomplete === "family-name" || autocomplete === "last-name") return "lastName";
+    if (autocomplete === "name") return "fullName";
+    if (autocomplete === "organization") return "company";
+    if (autocomplete === "address-line1" || autocomplete === "street-address") return "address1";
+    if (autocomplete === "address-line2") return "address2";
+    if (autocomplete === "address-level2") return "city";
+    if (autocomplete === "address-level1") return "stateRegion";
+    if (autocomplete === "postal-code") return "postalCode";
+    if (autocomplete === "country" || autocomplete === "country-name") return "country";
+    if (autocomplete === "url") return "website";
+    if (autocomplete === "organization-title") return "jobTitle";
+    if (FIELD_RULES.firstName.hint.test(text)) return "firstName";
+    if (FIELD_RULES.lastName.hint.test(text)) return "lastName";
+    if (normalizeIdentityPart(element.name || "") === "name" || normalizeIdentityPart(labelText(element)) === "name" || /^name$/i.test(text) || /\b(full[ _-]?name|your name|contact name|customer name|person name)\b/i.test(text)) return "fullName";
+    if (FIELD_RULES.email.hint.test(text)) return "email";
+    if (FIELD_RULES.phone.hint.test(text)) return "phone";
+    if (/\b(company|organisation|organization|employer)\b/i.test(text)) return "company";
+    if (/\bdepartment( name)?|\bdept\b/i.test(text)) return "department";
+    if (/\baddress\b/i.test(text)) return /\b(line|suite|unit|apt|apartment|address 2|address two)\b/i.test(text) ? "address2" : "address1";
+    if (FIELD_RULES.address1.hint.test(text)) return "address1";
+    if (FIELD_RULES.address2.hint.test(text)) return "address2";
+    if (FIELD_RULES.city.hint.test(text)) return "city";
+    if (FIELD_RULES.stateRegion.hint.test(text)) return "stateRegion";
+    if (FIELD_RULES.postalCode.hint.test(text)) return "postalCode";
+    if (FIELD_RULES.country.hint.test(text)) return "country";
+    if (FIELD_RULES.website.hint.test(text)) return "website";
+    if (FIELD_RULES.jobTitle.hint.test(text)) return "jobTitle";
+    if (FIELD_RULES.message.hint.test(text)) return "message";
+    return null;
+  }
+
+  function fallbackValue(element, profile) {
+    const type = (element.type || "").toLowerCase();
+    if (type === "email") return profile?.email || "test@example.com";
+    if (type === "tel") return profile?.phone || "+1 555-0100";
+    if (type === "url") return profile?.website || "https://example.com";
+    if (type === "number") return "42";
+    return profile?.otherText || "Lorem ipsum dolor sit amet";
+  }
+
+  function numericValue(element) {
+    const minAttr = element.getAttribute("min");
+    const maxAttr = element.getAttribute("max");
+    const stepAttr = element.getAttribute("step");
+    const min = minAttr === null || minAttr === "" ? NaN : Number(minAttr);
+    const max = maxAttr === null || maxAttr === "" ? NaN : Number(maxAttr);
+    const step = stepAttr && stepAttr !== "any" ? Math.abs(Number(stepAttr)) : 1;
+    const decimal = /\./.test(String(minAttr || "")) || /\./.test(String(maxAttr || "")) || /\./.test(String(stepAttr || ""));
+    let value = Number.isFinite(min) ? min : (Number.isFinite(max) ? Math.min(decimal ? 1.5 : 42, max) : (decimal ? 1.5 : 42));
+    if (!Number.isFinite(value)) value = decimal ? 1.5 : 42;
+    if (Number.isFinite(min) && value < min) value = min;
+    if (Number.isFinite(max) && value > max) value = max;
+    if (step > 0 && Number.isFinite(min)) value = min + Math.ceil((value - min) / step) * step;
+    if (Number.isFinite(max) && value > max) value = max;
+    return decimal ? String(Number(value).toFixed(2).replace(/\.00$/, "")) : String(Math.round(value));
+  }
+
+  function decimalValue(element) {
+    return numericValue(element);
+  }
+
+  function validFallbackValue(element, profile) {
+    const type = (element.type || "").toLowerCase();
+    const mode = (element.getAttribute("inputmode") || "").toLowerCase();
+    const text = hints(element).toLowerCase();
+    if (type === "email") return profile?.email || "test@example.com";
+    if (type === "tel" || PHONE_HINT.test(text) || mode === "tel") return profile?.phone || "+1 555-0100";
+    if (type === "url") return profile?.website || "https://example.com";
+    if (type === "number") return numericValue(element);
+    if (/percentage/.test(text)) return "50";
+    if (/age/.test(text)) return "25";
+    if (/quantity|qty/.test(text)) return "1";
+    if (/decimal|price|amount|cost|rate|ratio/.test(text)) return decimalValue(element);
+    if (/zip|postal/.test(text)) return numericValue(element);
+    return profile?.otherText || "Lorem ipsum dolor sit amet";
+  }
+
+  function valueForField(key, profile, element) {
+    if (key === "department") return profile?.department || "qa";
+    if (key === "message") return profile?.otherText || "Lorem ipsum dolor sit amet";
+    if (key === "number") return numericValue(element);
+    if (key === "decimal") return decimalValue(element);
+    if (key === "postal") return numericValue(element);
+    if (key === "percentage") return "50";
+    if (key === "age") return "25";
+    if (key === "quantity") return "1";
+    return profile?.[key] || fallbackValue(element, profile);
+  }
+
+  function fillSafeField(element, profile) {
+    const key = classifyField(element);
+    if (!key) return false;
+    const value = valueForField(key, profile, element);
+    return setValue(element, value, key === "number" ? "postalCode" : key);
+  }
+
+  function fillUnknownSafeField(element, profile) {
+    if (!eligible(element) || !canFill(element)) return false;
+    if (element instanceof HTMLSelectElement) return false;
+    const type = (element.type || "").toLowerCase();
+    if (messageField(element) || plainTextField(element) || type === "email" || type === "tel" || type === "url" || type === "number") {
+      return setValue(element, validFallbackValue(element, profile), type === "number" ? "postalCode" : "message");
+    }
+    return false;
+  }
+
+  function fallbackKey(element) {
+    const type = (element.type || "").toLowerCase();
+    const text = hints(element).toLowerCase();
+    if (type === "email") return "email";
+    if (type === "tel" || PHONE_HINT.test(text)) return "phone";
+    if (type === "url") return "website";
+    if (type === "number") return /decimal|price|amount|cost|rate|ratio/.test(text) ? "decimal" : "number";
+    if (/percentage/.test(text)) return "percentage";
+    if (/age/.test(text)) return "age";
+    if (/quantity|qty/.test(text)) return "quantity";
+    if (/zip|postal/.test(text)) return "postal";
+    return "text";
+  }
+
+  function fillRemainingSafeField(element, profile) {
+    if (!eligible(element) || !canFill(element) || fieldValue(element).trim()) return false;
+    if (element instanceof HTMLSelectElement) return false;
+    const key = classifyField(element);
+    const attempts = [];
+    const fallback = fallbackKey(element);
+    if (key) attempts.push(valueForField(key, profile, element));
+    if (fallback === "decimal") attempts.push(decimalValue(element));
+    if (fallback === "number" || fallback === "postal") attempts.push(numericValue(element));
+    if (fallback === "percentage") attempts.push("50");
+    if (fallback === "age") attempts.push("25");
+    if (fallback === "quantity") attempts.push("1");
+    attempts.push(validFallbackValue(element, profile));
+    if (fallback === "text") attempts.push(profile?.otherText || "Lorem ipsum dolor sit amet");
+    for (const value of attempts) {
+      if (!value) continue;
+      const before = fieldValue(element);
+      if (setValue(element, value, fallback === "number" || fallback === "postal" ? "postalCode" : key || "message") && fieldValue(element).trim() && fieldValue(element) !== before) return true;
+    }
+    return false;
   }
 
   function optionValue(element, value, key) {
@@ -246,9 +436,15 @@
         const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
         if (setter) setter.call(element, nextValue); else element.value = nextValue;
       }
+      dispatchChange(element);
     } catch { return false; }
-    filledValues.set(element, fieldValue(element));
-    dispatchChange(element);
+    const accepted = fieldValue(element);
+    const keys = fieldIdentityKeys(element);
+    if (accepted.trim()) {
+      const normalized = normalizeTrackedValue(element, accepted);
+      filledValues.set(element, accepted);
+      for (const key of keys) filledIdentities.set(key, normalized);
+    }
     return true;
   }
 
@@ -302,28 +498,45 @@
     return filled;
   }
 
+  function fillTextFallbackField(element, profile) {
+    if (!element || element.disabled || element.readOnly || !visible(element) || fieldValue(element).trim()) return false;
+    const type = (element.type || "").toLowerCase();
+    const role = (element.getAttribute && element.getAttribute("role")) || "";
+    if (element instanceof HTMLTextAreaElement || element.isContentEditable || (element instanceof HTMLInputElement && ["", "text", "search"].includes(type)) || role === "textbox") {
+      return setValue(element, profile?.otherText || "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "message");
+    }
+    return false;
+  }
+
   function fillContactProfile(profile) {
-    const candidates = activePopupCandidates();
-    const claimed = new Set();
     const filled = [];
-    const hasSplitName = Boolean(bestField(candidates, FIELD_RULES.firstName, claimed, "firstName") || bestField(candidates, FIELD_RULES.lastName, claimed, "lastName"));
-    for (const key of FILL_ORDER) {
-      if (key === "fullName" && hasSplitName) continue;
-      const value = key === "message" ? profile?.otherText || "Lorem ipsum dolor sit amet, consectetur adipiscing elit." : profile?.[key];
-      const field = value && bestField(candidates, FIELD_RULES[key], claimed, key);
-      if (field && setValue(field, value, key)) { claimed.add(field); filled.push(key); }
-    }
-    for (const field of candidates) {
-      if (claimed.has(field) || !eligible(field) || !canFill(field) || !plainTextField(field) || knownField(field)) continue;
-      if (setValue(field, profile?.otherText || "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", "message")) { claimed.add(field); filled.push("other"); }
-    }
-    for (const field of candidates) {
-      if (field instanceof HTMLSelectElement && !claimed.has(field)) {
-        if (fillSelectElement(field) || fillMultiSelectElement(field)) { claimed.add(field); filled.push(field.multiple ? "multi-select" : "select"); }
+    const touched = new WeakSet();
+    const fillPass = () => {
+      const candidates = activePopupCandidates();
+      let changed = false;
+      for (const field of candidates) {
+        if (touched.has(field) || !eligible(field) || !canFill(field)) continue;
+        if (field instanceof HTMLSelectElement) continue;
+        const before = fieldValue(field);
+        const didFill = fillSafeField(field, profile) || fillUnknownSafeField(field, profile) || fillRemainingSafeField(field, profile);
+        if (didFill && fieldValue(field) !== before) { touched.add(field); filled.push(classifyField(field) || fallbackKey(field)); changed = true; }
       }
+      for (const field of candidates) {
+        if (touched.has(field) || !eligible(field) || !canFill(field) || !(field instanceof HTMLSelectElement)) continue;
+        const before = fieldValue(field);
+        const didFill = fillSelectElement(field) || fillMultiSelectElement(field);
+        if (didFill && fieldValue(field) !== before) { touched.add(field); filled.push(field.multiple ? "multi-select" : "select"); changed = true; }
+      }
+      const custom = fillCustomControls(candidates);
+      if (custom.length) { filled.push(...custom); changed = true; }
+      return changed;
+    };
+    fillPass();
+    fillPass();
+    const finalCandidates = activePopupCandidates();
+    for (const field of finalCandidates) {
+      if (fillTextFallbackField(field, profile)) filled.push("text-fallback");
     }
-    const extraFilled = fillCheckboxesAndRadios(candidates);
-    filled.push(...extraFilled, ...fillCustomControls(candidates));
     return filled.length
       ? { ok: true, message: `Filled ${filled.length} safe contact field${filled.length === 1 ? "" : "s"}.`, filled }
       : { ok: false, message: "No empty safe contact fields were found on this page.", filled };

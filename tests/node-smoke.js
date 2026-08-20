@@ -80,14 +80,152 @@ const assert = (condition, label) => { if (!condition) throw new Error(label); }
   vm.createContext(fillContext);
   vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), fillContext);
   const fill = (profile) => { let result; fillListener({ type: "FILL_CONTACT_PROFILE", profile }, null, (response) => { result = response; }); return result; };
-  const firstProfile = { ...WebPlover.contactProfile({ email: "first@example.com", allocationId: "first" }), otherText: "First lorem" };
-  const secondProfile = { ...WebPlover.contactProfile({ email: "second@example.com", allocationId: "second" }), otherText: "Second lorem" };
+  const firstProfile = { ...WebPlover.contactProfile({ email: "first@example.com", allocationId: "first", namePrefix: "Alpha", nameSuffix: "One" }), firstName: "Alpha First", lastName: "One Last", fullName: "Alpha First One Last", otherText: "First lorem" };
+  const secondProfile = { ...WebPlover.contactProfile({ email: "second@example.com", allocationId: "second", namePrefix: "Beta", nameSuffix: "Two" }), firstName: "Beta First", lastName: "Two Last", fullName: "Beta First Two Last", otherText: "Second lorem" };
   fill(firstProfile);
+  const firstFilledValues = { firstName: firstNameField.value, lastName: lastNameField.value, phone: mobileField.value, email: emailField.value, lorem: loremField.value, unknown: unknownField.value };
   fill(secondProfile);
-  assert(firstNameField.value && lastNameField.value && mobileField.value.startsWith("+1 555-") && emailField.value === "second@example.com" && loremField.value === "Second lorem" && contentEditableDate.textContent === "" && dateField.value === "" && unknownField.value === "Second lorem", "classifies known fields before lorem fallback");
+  assert(firstNameField.value === secondProfile.firstName && lastNameField.value === secondProfile.lastName && mobileField.value === secondProfile.phone && emailField.value === secondProfile.email && loremField.value === secondProfile.otherText && unknownField.value === secondProfile.otherText, "refreshes Plover-filled fields on repeat autofill");
   emailField.value = "person@example.com";
   fill({ email: "third@example.com", otherText: "Third lorem" });
   assert(emailField.value === "person@example.com" && loremField.value === "Third lorem", "preserves user-edited fields");
+
+  class ComplexInput extends FakeInput {
+    constructor(name, type = "text") { super(name, type); this.labels = []; this.placeholder = ""; this._attrs = {}; }
+    getAttribute(name) { return this._attrs[name] ?? null; }
+    setAttribute(name, value) { this._attrs[name] = String(value); }
+  }
+  class ComplexTextArea extends FakeTextArea {
+    constructor(name) { super(name); this.labels = []; this.placeholder = ""; this._attrs = {}; }
+    getAttribute(name) { return this._attrs[name] ?? null; }
+    setAttribute(name, value) { this._attrs[name] = String(value); }
+  }
+  class ComplexSelect extends FakeInput {
+    constructor(name) { super(name, "select-one"); this.options = []; this.multiple = false; }
+    getAttribute(name) { return this._attrs?.[name] ?? null; }
+  }
+  const makeField = (label, type = "text", attrs = {}) => { const field = type === "textarea" ? new ComplexTextArea(label) : type === "select" ? new ComplexSelect(label) : new ComplexInput(label, type); field.labels = [{ textContent: label }]; field.placeholder = attrs.placeholder || ""; field._attrs = { ...attrs }; field.getBoundingClientRect = () => ({ width: 1, height: 1 }); field.dispatchEvent = () => {}; return field; };
+  const complexFields = [
+    makeField("First Name"), makeField("Last Name"), makeField("Full Name"), makeField("Email", "email"), makeField("Secondary Email", "email"), makeField("Phone", "tel"), makeField("Alternate Phone", "tel"), makeField("Company"), makeField("Department"), makeField("Address"), makeField("City"), makeField("State"), makeField("Postal Code"), makeField("Country"), makeField("Website", "url"), makeField("Job Title"), makeField("Project Name"), makeField("Product Name"), makeField("Reference Name"), makeField("Business Requirement", "textarea"), makeField("Custom Details"), makeField("Additional Information", "textarea"), makeField("Numeric Custom Field", "number"), makeField("Password", "password"), makeField("Manually Entered Value")
+  ];
+  complexFields[24].value = "keep me";
+  const complexProfile = { ...WebPlover.contactProfile({ email: "qa-000009@webplover.com", allocationId: "complex", country: "US" }), department: "Support", otherText: "Lorem ipsum dolor sit amet" };
+  let complexListener;
+  const complexContext = {
+    HTMLInputElement: ComplexInput,
+    HTMLTextAreaElement: ComplexTextArea,
+    HTMLSelectElement: ComplexSelect,
+    Event: class Event { constructor(type) { this.type = type; } },
+    getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    document: { activeElement: null, querySelectorAll: (selector) => selector === "input, textarea, select, [contenteditable=\"true\"]" ? complexFields : [] },
+    chrome: { runtime: { onMessage: { addListener: (listener) => { complexListener = listener; } } } }
+  };
+  vm.createContext(complexContext);
+  vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), complexContext);
+  complexListener({ type: "FILL_CONTACT_PROFILE", profile: complexProfile }, null, () => {});
+  assert(complexFields[0].value === complexProfile.firstName, "fills first name");
+  assert(complexFields[1].value === complexProfile.lastName, "fills last name");
+  assert(complexFields[2].value === complexProfile.fullName, "fills full name");
+  assert(complexFields[3].value === complexProfile.email, "fills email");
+  assert(complexFields[4].value === complexProfile.email, "fills secondary email fallback");
+  assert(complexFields[5].value === complexProfile.phone, "fills phone");
+  assert(complexFields[6].value === complexProfile.phone, "fills alternate phone fallback");
+  assert(complexFields[7].value === complexProfile.company, "fills company");
+  assert(complexFields[8].value === complexProfile.department, "fills department");
+  assert(complexFields[9].value === complexProfile.address1, "fills address");
+  assert(complexFields[10].value === complexProfile.city, "fills city");
+  assert(complexFields[11].value === complexProfile.stateRegion, "fills state");
+  assert(complexFields[12].value === complexProfile.postalCode, "fills postal code");
+  assert(complexFields[13].value === complexProfile.country, "fills country");
+  assert(complexFields[14].value === complexProfile.website, "fills website");
+  assert(complexFields[15].value === complexProfile.jobTitle, "fills job title");
+  assert(complexFields[16].value === complexProfile.otherText, "fills project name fallback");
+  assert(complexFields[17].value === complexProfile.otherText, "fills product name fallback");
+  assert(complexFields[18].value === complexProfile.otherText, "fills reference name fallback");
+  assert(complexFields[19].value === complexProfile.otherText, "fills business requirement fallback");
+  assert(complexFields[20].value === complexProfile.otherText, "fills custom details fallback");
+  assert(complexFields[21].value === complexProfile.otherText, "fills additional information fallback");
+  assert(complexFields[22].value === "42", "fills numeric custom field");
+  assert(complexFields[23].value === "", "leaves password untouched");
+  assert(complexFields[24].value === "keep me", "preserves manually entered value");
+
+  const rerenderFields = [
+    makeField("Name", "text"),
+    makeField("Email", "email"),
+    makeField("Phone", "tel"),
+    makeField("Department", "text"),
+    makeField("Project Name", "text"),
+    makeField("Custom Details", "text")
+  ];
+  let rerenderListener;
+  const rerenderContext = {
+    HTMLInputElement: ComplexInput,
+    HTMLTextAreaElement: ComplexTextArea,
+    HTMLSelectElement: ComplexSelect,
+    Event: class Event { constructor(type) { this.type = type; } },
+    getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    document: { activeElement: null, querySelectorAll: (selector) => selector === "input, textarea, select, [contenteditable=\"true\"]" ? rerenderFields : [] },
+    chrome: { runtime: { onMessage: { addListener: (listener) => { rerenderListener = listener; } } } }
+  };
+  vm.createContext(rerenderContext);
+  vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), rerenderContext);
+  const firstRerenderProfile = { ...WebPlover.contactProfile({ email: "first-refresh@example.com", allocationId: "refresh-1" }), otherText: "First refresh lorem" };
+  const secondRerenderProfile = { ...WebPlover.contactProfile({ email: "second-refresh@example.com", allocationId: "refresh-2" }), otherText: "Second refresh lorem" };
+  rerenderListener({ type: "FILL_CONTACT_PROFILE", profile: firstRerenderProfile }, null, () => {});
+  const firstValues = rerenderFields.map((field) => field.value);
+  rerenderFields[4].value = "My Real Project";
+  const replacedEmail = new ComplexInput("EMAIL", "email");
+  replacedEmail.labels = [{ textContent: "Email" }];
+  replacedEmail._attrs = { "data-slug": "primary-email" };
+  replacedEmail.value = firstValues[1];
+  replacedEmail.getBoundingClientRect = () => ({ width: 1, height: 1 });
+  replacedEmail.dispatchEvent = () => {};
+  rerenderFields[1] = replacedEmail;
+  rerenderListener({ type: "FILL_CONTACT_PROFILE", profile: secondRerenderProfile }, null, () => {});
+  assert(rerenderFields[0].value === secondRerenderProfile.fullName, "refreshes name on second autofill");
+  assert(rerenderFields[1].value === secondRerenderProfile.email, "refreshes recreated email field");
+  assert(rerenderFields[2].value === secondRerenderProfile.phone, "refreshes phone on second autofill");
+  assert(rerenderFields[3].value === secondRerenderProfile.department, "refreshes department on second autofill");
+  assert(rerenderFields[4].value === "My Real Project", "preserves user-edited field");
+  assert(rerenderFields[5].value === secondRerenderProfile.otherText, "refreshes fallback text field");
+
+  const fallbackFields = [
+    makeField("Mystery Field", "text", { inputmode: "text" }),
+    makeField("Decimal Amount", "number", { min: "1.5", max: "9.5", step: "0.5" }),
+    makeField("Age", "number", { min: "18", max: "99" }),
+    makeField("Quantity", "number", { min: "1", max: "10" }),
+    makeField("Percentage", "number", { min: "0", max: "100" }),
+    makeField("Postal Code Numeric", "number", { min: "10000", max: "99999" }),
+    makeField("Textarea Unknown", "textarea"),
+    makeField("URL-ish", "url"),
+    makeField("Tel-ish", "tel"),
+    makeField("Pattern Numeric", "text", { pattern: "\\d+", inputmode: "numeric" }),
+    makeField("Manual Value", "text")
+  ];
+  fallbackFields[10].value = "already here";
+  const fallbackContext = {
+    HTMLInputElement: ComplexInput,
+    HTMLTextAreaElement: ComplexTextArea,
+    HTMLSelectElement: ComplexSelect,
+    Event: class Event { constructor(type) { this.type = type; } },
+    getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    document: { activeElement: null, querySelectorAll: (selector) => selector === "input, textarea, select, [contenteditable=\"true\"]" ? fallbackFields : [] },
+    chrome: { runtime: { onMessage: { addListener: (listener) => { fallbackContext.listener = listener; } } } }
+  };
+  vm.createContext(fallbackContext);
+  vm.runInContext(fs.readFileSync("src/content/content-script.js", "utf8"), fallbackContext);
+  fallbackContext.listener({ type: "FILL_CONTACT_PROFILE", profile: { ...WebPlover.contactProfile({ email: "fallback@example.com" }), otherText: "Lorem ipsum dolor sit amet" } }, null, () => {});
+  assert(fallbackFields[0].value.length > 0, "fills mystery field");
+  assert(Number(fallbackFields[1].value) >= 1.5 && Number(fallbackFields[1].value) <= 9.5, "fills decimal within range");
+  assert(Number(fallbackFields[2].value) >= 18 && Number(fallbackFields[2].value) <= 99, "fills age within range");
+  assert(Number(fallbackFields[3].value) >= 1 && Number(fallbackFields[3].value) <= 10, "fills quantity within range");
+  assert(Number(fallbackFields[4].value) >= 0 && Number(fallbackFields[4].value) <= 100, "fills percentage within range");
+  assert(Number(fallbackFields[5].value) >= 10000 && Number(fallbackFields[5].value) <= 99999, "fills postal numeric within range");
+  assert(fallbackFields[6].value.length > 0, "fills unknown textarea");
+  assert(fallbackFields[7].value.length > 0, "fills url field");
+  assert(fallbackFields[8].value.length > 0, "fills tel field");
+  assert(fallbackFields[9].value.length > 0, "fills pattern numeric field");
+  assert(fallbackFields[10].value === "already here", "preserves filled manual field");
 
   const normalButton = new FakeButton("Contact form owner", { role: "button" });
   const dropdownOption = new FakeButton("Choose one", { role: "option" });
@@ -133,7 +271,7 @@ const assert = (condition, label) => { if (!condition) throw new Error(label); }
       action: { onClicked: { addListener: () => {} } },
       commands: { onCommand: { addListener: () => {} } }
     };
-    const ctx = { console, URL, crypto: { randomUUID: () => "id" }, chrome: chromeMock, globalThis: null };
+    const ctx = { console, URL, crypto: { randomUUID: () => "id" }, chrome: chromeMock, importScripts: () => {}, globalThis: null };
     ctx.globalThis = ctx;
     vm.createContext(ctx);
     vm.runInContext(fs.readFileSync("src/shared/constants.js", "utf8"), ctx);
