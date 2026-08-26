@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TestFiller Privacy Policy</title>
+  <style>
+    :root { color-scheme: light; --bg: #f6f8fb; --card: #ffffff; --text: #132033; --muted: #5b677a; --accent: #2457ff; --border: #dbe3ef; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 30%); }
+    main { max-width: 920px; margin: 0 auto; padding: 32px 20px 56px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(18, 34, 66, 0.06); }
+    h1, h2 { line-height: 1.2; }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 4vw, 3rem); }
+    h2 { margin-top: 2rem; font-size: 1.25rem; }
+    p, li { color: var(--text); }
+    .meta, .note { color: var(--muted); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #eaf0ff; color: var(--accent); font-size: 0.875rem; font-weight: 600; }
+    ul { padding-left: 1.25rem; }
+    a { color: var(--accent); }
+    code { background: #f1f5fb; padding: 0 0.25rem; border-radius: 4px; }
+    @media (max-width: 640px) { .card { padding: 20px; border-radius: 12px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <span class="badge">TestFiller Privacy Policy</span>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Effective date: 2026-08-26</p>
+
+      <p>TestFiller is a Chrome extension designed for developers, QA testers, marketers, and website operators who need clearly fake test identities for form testing.</p>
+
+      <h2>What TestFiller does</h2>
+      <p>TestFiller generates test email addresses and contact profiles, then helps fill empty form fields on the active website. It can also copy generated emails to the clipboard and record local history of generated identities.</p>
+
+      <h2>Information processed locally</h2>
+      <p>When you use TestFiller, it processes website content locally in your browser to determine which fields can be safely filled. That may include form labels, placeholders, field names, field types, and the current page URL so it can generate context-aware test identities and save a submission URL when you use the autofill flow.</p>
+      <p>TestFiller does not automatically send this website content to WebPlover or any other server.</p>
+
+      <h2>Information stored locally</h2>
+      <p>TestFiller stores data only in your browser using <code>chrome.storage.local</code>. That may include:</p>
+      <ul>
+        <li>Settings such as name prefix, alias prefix, domain, department, email mode, company, other-text prefix and suffix, default country, theme, history limit, and auto-copy preference</li>
+        <li>Department counters used to generate unique test email addresses</li>
+        <li>Generated test identities and profile data</li>
+        <li>Email history records</li>
+        <li>Optional submission URLs recorded after successful fill actions</li>
+      </ul>
+
+      <h2>Data transmission</h2>
+      <p>TestFiller does not use remote APIs, analytics, advertising, tracking, or external databases.</p>
+      <p>The extension does not send stored settings, counters, generated test identities, or history to WebPlover or third parties.</p>
+      <p>The only optional external transmission is when you use the support form in the extension. That form opens your email application with a <code>mailto:</code> link and may include the message you choose to send. That transmission is controlled by your email client, not by TestFiller.</p>
+
+      <h2>Clipboard use</h2>
+      <p>TestFiller can copy generated emails to your clipboard when you use the copy action. Clipboard content remains under your control.</p>
+
+      <h2>Third-party sharing and monetization</h2>
+      <p>TestFiller does not sell user data, does not use user data for advertising, and does not share user data with third parties.</p>
+
+      <h2>Deleting local data</h2>
+      <p>You can delete individual history records from the History page, clear all history, and reset local department counters from the extension UI. You can also remove the extension from Chrome to delete the data stored by the extension in your browser profile.</p>
+
+      <h2>Uninstall behavior</h2>
+      <p>When TestFiller is uninstalled, Chrome removes the extension’s local storage for that browser profile.</p>
+
+      <h2>Chrome Web Store policy notes</h2>
+      <p>TestFiller is intended to comply with the Chrome Web Store User Data Policy and Limited Use requirements by keeping extension data local and by avoiding remote code, tracking, and advertising.</p>
+
+      <h2>Policy updates</h2>
+      <p>This policy may be updated when the extension’s behavior changes. The effective date above will be revised when that happens.</p>
+
+      <h2>Contact</h2>
+      <p>Support email: <a href="mailto:support@webplover.com">support@webplover.com</a></p>
+    </section>
+  </main>
+</body>
+</html>

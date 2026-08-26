@@ -1,6 +1,6 @@
-# Plover Filler
+# TestFiller
 
-Plover Filler is a local-only Manifest V3 Chrome extension that generates clearly fake test emails and contact profiles, then fills safe empty form fields on the active page.
+TestFiller is a local-only Manifest V3 Chrome extension that generates clearly fake test emails and contact profiles, then fills safe empty form fields on the active page.
 
 It does not use an API, server, account, or token.
 
@@ -48,7 +48,7 @@ The domain, alias prefix, department, mode, and country are configurable in Sett
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
 4. Select this project folder.
-5. Pin **Plover Filler** if desired.
+5. Pin **TestFiller** if desired.
 
 ## Usage
 
@@ -67,7 +67,7 @@ The domain, alias prefix, department, mode, and country are configurable in Sett
 
 ### Context menus
 
-- Right-click an editable field for **Generate and fill Plover Filler profile**
+- Right-click an editable field for **Generate and fill TestFiller profile**
 - Right-click the extension icon for **Settings**
 
 ## Settings
@@ -99,7 +99,7 @@ The History page lets you:
 
 ## Limitations
 
-Plover Filler works on normal web pages and common form controls. It cannot reliably fill browser-internal pages, closed shadow roots, cross-origin frames, or forms that block scripted input.
+TestFiller works on normal web pages and common form controls. It cannot reliably fill browser-internal pages, closed shadow roots, cross-origin frames, or forms that block scripted input.
 
 ## Smoke checks
 
@@ -113,4 +113,14 @@ You can also open `tests/smoke.html` in a browser for generation checks.
 
 ## Package
 
-A ready-to-load ZIP is available at `package/plover-filler.zip`.
+Run this from the project root to generate the release ZIP:
+
+```powershell
+.\scripts\package-extension.ps1
+```
+
+Upload only `package\TestFiller-v1.0.0.zip` to the Chrome Web Store.
+Do not upload the complete project ZIP or a ZIP that contains the `TestFiller/` folder.
+
+For local testing, extract the release ZIP and use Chrome’s **Load unpacked** option on the extracted folder.
+For Chrome Web Store submission, upload the release ZIP directly.

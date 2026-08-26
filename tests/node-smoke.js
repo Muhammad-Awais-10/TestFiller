@@ -266,7 +266,7 @@ const assert = (condition, label) => { if (!condition) throw new Error(label); }
         sendMessage: async (tabId, message) => { backgroundCalls.sendMessage.push({ tabId, message }); if (overrides.sendMessage) return overrides.sendMessage(tabId, message, backgroundCalls.sendMessage.length); return { ok: true, message: "filled" }; }
       },
       storage: { local: { get: async () => (overrides.get || {}), set: async () => {} } },
-      contextMenus: { removeAll: (_, cb) => cb && cb(), create: () => {} },
+      contextMenus: { removeAll: (_, cb) => cb && cb(), create: () => {}, onClicked: { addListener: () => {} } },
       runtime: { onInstalled: { addListener: () => {} }, onStartup: { addListener: () => {} }, onMessage: { addListener: (fn) => { listener = fn; } }, openOptionsPage: () => {} },
       action: { onClicked: { addListener: () => {} } },
       commands: { onCommand: { addListener: () => {} } }
@@ -282,25 +282,25 @@ const assert = (condition, label) => { if (!condition) throw new Error(label); }
   };
 
   let { listener: bgListener } = runBackground();
-  let response;
-  await bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() }, (value) => { response = value; });
-  assert(response.ok, "content script already available");
+  const callBackground = async (...args) => new Promise((resolve) => { bgListener(...args, resolve); });
+  let result = await callBackground({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() });
+  assert(result.ok, "content script already available");
   assert(backgroundCalls.executeScript.length === 0, "does not inject when receiver exists");
 
   backgroundCalls.sendMessage = []; backgroundCalls.executeScript = [];
   ({ listener: bgListener } = runBackground({ sendMessage: async (_tabId, _message, callCount) => callCount === 1 ? Promise.reject(new Error("Could not establish connection. Receiving end does not exist.")) : { ok: true, message: "filled" }, executeScript: async () => ({}) }));
-  await bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() }, (value) => { response = value; });
-  assert(response.ok, "no receiver, injection, then retry");
+  result = await new Promise((resolve) => { bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() }, resolve); });
+  assert(result.ok, "no receiver, injection, then retry");
   assert(backgroundCalls.executeScript.length === 1, "injects once after missing receiver");
   assert(backgroundCalls.sendMessage.length === 2, "retries once after injection");
 
   ({ listener: bgListener } = runBackground({ sendMessage: async () => { throw new Error("Could not establish connection. Receiving end does not exist."); }, executeScript: async () => { throw new Error("Cannot access contents of url"); } }));
-  await bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: { id: 7, url: "chrome://extensions" } }, (value) => { response = value; });
-  assert(!response.ok, "restricted page injection fails");
+  result = await new Promise((resolve) => { bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: { id: 7, url: "chrome://extensions" } }, resolve); });
+  assert(!result.ok, "restricted page injection fails");
 
   ({ listener: bgListener } = runBackground({ sendMessage: async () => { throw new Error("Could not establish connection. Receiving end does not exist."); }, executeScript: async () => ({}) }));
-  await bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() }, (value) => { response = value; });
-  assert(!response.ok, "retry failure returns real failure");
+  result = await new Promise((resolve) => { bgListener({ type: "FILL_ACTIVE_TAB", email: "a@b.com" }, { tab: makeTab() }, resolve); });
+  assert(!result.ok, "retry failure returns real failure");
 
   const duplicateGuard = { installed: 0 };
   const dupContext = {
