@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "TestFiller",
+  "name": "TestFiller – Form Autofill & Testing Tool",
   "description": "Generate unique, clearly identifiable test emails and fill active form fields.",
   "version": "1.0.0",
   "action": {
@@ -13,14 +13,24 @@
   "background": {
     "service_worker": "src/background/service-worker.js"
   },
-  "permissions": ["storage", "clipboardWrite", "activeTab", "scripting", "contextMenus"],
+  "permissions": [
+    "storage",
+    "clipboardWrite",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
   "commands": {
     "generate-email": {
-      "suggested_key": { "default": "Ctrl+Shift+E" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+E"
+      },
       "description": "Generate and copy a TestFiller test email"
     },
     "generate-and-fill": {
-      "suggested_key": { "default": "Ctrl+Shift+F" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+F"
+      },
       "description": "Generate, copy, and fill a TestFiller test email"
     }
   },
@@ -33,8 +43,13 @@
   "options_page": "src/ui/options.html",
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["src/content/content-script.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/content/content-script.js"
+      ],
       "run_at": "document_idle",
       "all_frames": true
     }
